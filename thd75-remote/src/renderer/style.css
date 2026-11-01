@@ -207,3 +207,6 @@ main {
 .chan-col .chan-list { max-height: 200px; }
 .chan-row { cursor: pointer; border-radius: 6px; padding: 2px 4px; }
 .chan-row:hover { background: #262a31; }
+
+.swapbar { grid-column: 1 / -1; display: flex; justify-content: center; }
+.swapbar button { min-width: 120px; font-weight: 700; }

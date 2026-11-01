@@ -383,11 +383,6 @@ function wire() {
     bindRepeat($('dn' + band), () => nudge(b, -1));
     bindRepeat($('up' + band), () => nudge(b, +1));
     bindWheel($('band' + band), b);
-    // Click on a card's empty space swaps the bands, like the radio's A/B key.
-    $('band' + band).addEventListener('click', (e) => {
-      if (e.target.closest('input, select, button, .vm, .knob, .led, .smeter')) return;
-      swapBands();
-    });
     $('vm' + band).onclick = () => {
       if (applyingUi || !connected) return;
       const cur = (band === 'A' ? lastState.aBand : lastState.bBand).vfoMode;
@@ -397,6 +392,8 @@ function wire() {
     $('step' + band).onchange = () => { if (!applyingUi) rpc('setStep', b, Number($('step' + band).value)); };
     $('att' + band).onchange = () => { if (!applyingUi) rpc('setAttenuator', b, $('att' + band).checked ? 1 : 0); };
   }
+
+  $('swapBtn').onclick = () => swapBands();
 
   // Volume: slider, number field, and wheel over both
   $('volSlider').addEventListener('input', () => setVolumeFromUi(Number($('volSlider').value)));
