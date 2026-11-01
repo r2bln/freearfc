@@ -23,6 +23,20 @@ function createWindow() {
   });
   win.removeMenu();
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
+  // Dev aid: THD75_SHOT=/tmp/skin.png captures the window after load.
+  // The skin itself is forced via THD75_SKIN=winamp in preload (runs first).
+  if (process.env.THD75_SHOT) {
+    const shot = process.env.THD75_SHOT;
+    win.webContents.once('did-finish-load', () => {
+      setTimeout(() => {
+        win.capturePage().then((img) => {
+          require('fs').writeFileSync(shot, img.toPNG());
+          console.log('shot saved:', shot);
+          app.quit();
+        }).catch((e) => { console.error('shot failed:', e.message); app.quit(); });
+      }, 1200);
+    });
+  }
 }
 
 function send(channel, ...args) {

@@ -495,5 +495,18 @@ function wire() {
 initControls();
 wire();
 reflectActiveBand();
+
+// Skin toggle (default dark; Winamp Classic is the fun mode).
+{
+  const KEY = 'thd75.skin';
+  const apply = (on) => {
+    document.body.classList.toggle('winamp', on);
+    $('skinBtn').classList.toggle('on', on);
+    try { localStorage.setItem(KEY, on ? 'winamp' : 'dark'); } catch { /* private mode */ }
+  };
+  $('skinBtn').onclick = () => apply(!document.body.classList.contains('winamp'));
+  try { apply(localStorage.getItem(KEY) === 'winamp'); } catch { /* keep default */ }
+}
+
 refreshPorts().catch((e) => toast(e.message));
 appLog('TH-D75 Remote started');

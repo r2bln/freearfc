@@ -195,3 +195,131 @@ main {
   color: #9aa1ac; white-space: pre-wrap;
 }
 #appLog .err { color: var(--bad); }
+
+/* ================ Winamp Classic skin (body.winamp) ================ */
+/* Charcoal chrome, neon-green LCDs, gold sliders, 2px bevels, no radii. */
+
+body.winamp {
+  --bg: #222226;
+  --card: #2b2b30;
+  --edge: #000000;
+  --text: #c8c8cc;
+  --dim: #9a9aa2;
+  --accent: #00e000;
+  --ok: #00e000;
+  --bad: #e04040;
+}
+body.winamp * { border-radius: 0 !important; }
+body.winamp header {
+  background: linear-gradient(#3a3a40, #232327 40%, #17171c);
+  border-bottom: 2px solid #000;
+  box-shadow: inset 0 1px 0 #6a6a70;
+}
+body.winamp .brand { color: #00e000; text-shadow: 0 0 4px #00e00060; letter-spacing: 1px; }
+body.winamp .brand span { color: #cfcf9a; text-shadow: none; }
+
+/* panels: classic raised chrome bevel */
+body.winamp .card {
+  background: var(--card);
+  border: 2px solid;
+  border-color: #6a6a70 #000 #000 #6a6a70; /* light top/left, dark bottom/right */
+  box-shadow: inset 1px 1px 0 #4a4a52;
+}
+body.winamp .card-title {
+  background: #17171c;
+  color: #9a9aa2;
+  border-bottom: 1px solid #000;
+  margin: -12px -14px 8px;
+  padding: 3px 10px;
+  letter-spacing: 2px;
+  color: #cfcf9a; /* Winamp titlebar gold */
+  text-shadow: 0 1px 0 #000;
+  font-weight: 700;
+}
+body.winamp button { padding: 6px 12px; min-height: 26px; }
+
+/* LCD displays: black + neon green glow */
+body.winamp .freq {
+  color: #00e000;
+  background: #000;
+  border: 2px solid;
+  border-color: #000 #4a4a52 #4a4a52 #000; /* recessed */
+  text-shadow: 0 0 5px #00e000;
+  padding: 4px 10px;
+  font-size: 30px;
+}
+body.winamp #radioInfo {
+  background: #000;
+  color: #00e000;
+  border-bottom: 2px solid #000;
+  text-shadow: 0 0 3px #00e00080;
+}
+body.winamp .smeter { background: #000; border-color: #000 #4a4a52 #4a4a52 #000; }
+body.winamp .led.on { background: #e04040; box-shadow: 0 0 6px #e04040; }
+body.winamp .vm.active { color: #00e000; text-shadow: 0 0 4px #00e00080; }
+
+/* buttons: chunky beveled chrome */
+body.winamp button, body.winamp select, body.winamp input[type="text"], body.winamp input[type="number"] {
+  background: #2f2f34;
+  border: 2px solid;
+  border-color: #6a6a70 #000 #000 #6a6a70;
+  color: var(--text);
+  font-weight: 600;
+}
+body.winamp button:not(:disabled):hover { border-color: #9a9aa2 #000 #000 #9a9aa2; color: #fff; }
+body.winamp button:not(:disabled):active {
+  border-color: #000 #6a6a70 #6a6a70 #000; /* pressed */
+  background: #232327;
+  transform: none;
+}
+body.winamp button.primary, body.winamp .segbtn.on, body.winamp .tabbtn.on {
+  background: #00a000; color: #dfffdf; text-shadow: 0 1px 0 #004000;
+}
+body.winamp .knob { font-size: 17px; }
+body.winamp .band.active-band { border-color: #cfcf9a #000 #000 #cfcf9a; box-shadow: inset 0 0 0 1px #cfcf9a88; }
+
+/* PTT: dark red hazard, still chunky */
+body.winamp .ptt-big, body.winamp .ptt {
+  background: #5a1515;
+  border-color: #a04040 #200 #200 #a04040;
+  color: #ffaaaa;
+  text-shadow: 0 1px 0 #300;
+}
+body.winamp .ptt-big:not(:disabled):active, body.winamp .ptt-big.keyed,
+body.winamp .ptt:not(:disabled):active, body.winamp .ptt.keyed {
+  background: #d02020; color: #fff; border-color: #200 #a04040 #a04040 #200;
+}
+
+/* volume slider: black groove, gold thumb */
+body.winamp .vol {
+  appearance: none; -webkit-appearance: none;
+  height: 12px; background: #000;
+  border: 2px solid; border-color: #000 #4a4a52 #4a4a52 #000;
+}
+body.winamp .vol::-webkit-slider-thumb {
+  appearance: none; -webkit-appearance: none;
+  width: 18px; height: 20px;
+  background: linear-gradient(#cfcf9a, #7a7040 55%, #4a4426);
+  border: 1px solid #000;
+  box-shadow: inset 0 1px 0 #efe9c0;
+}
+
+/* playlist-style local memory and logs */
+body.winamp .chan-list, body.winamp .chan-row .ch-name {
+  background: #000; color: #00e000;
+}
+body.winamp .ch-freq { color: #00e000; text-shadow: 0 0 3px #00e00060; }
+body.winamp #appLog, body.winamp #log:not(.hidden) {
+  background: #000; color: #00e000; border: 2px solid; border-color: #000 #4a4a52 #4a4a52 #000;
+  text-shadow: 0 0 3px #00e00040;
+}
+body.winamp #log .tx { color: #7fb0e8; text-shadow: none; }
+body.winamp #log .rx { color: #00e000; }
+body.winamp #toast {
+  background: #000; color: #00e000; border: 2px solid #00e000;
+}
+
+/* window a bit narrower, more boombox-like */
+body.winamp main { max-width: 720px; margin: 0 auto; }
+body.winamp .skinbtn { min-width: 40px; font-weight: 800; color: #00e000; }
+body.winamp .skinbtn.on { background: #00a000; color: #dfffdf; }

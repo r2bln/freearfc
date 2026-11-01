@@ -1,6 +1,11 @@
 'use strict';
 const { contextBridge, ipcRenderer } = require('electron');
 
+// Dev aid: force the skin before renderer scripts run (THD75_SKIN=winamp).
+if (process.env.THD75_SKIN === 'winamp' || process.env.THD75_SKIN === 'dark') {
+  try { localStorage.setItem('thd75.skin', process.env.THD75_SKIN); } catch { /* ignore */ }
+}
+
 contextBridge.exposeInMainWorld('thd75', {
   listPorts: () => ipcRenderer.invoke('ports:list'),
   connect: (path) => ipcRenderer.invoke('thd75:connect', { path }),
