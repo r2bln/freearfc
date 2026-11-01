@@ -5,10 +5,20 @@ transceiver: a community reimplementation of the protocol spoken by the
 Windows-only *ARFC-D75* software, with an Electron UI and a reusable
 plain-Node protocol engine.
 
-![status](https://img.shields.io/badge/status-live--tested-brightgreen)
-Validated against a real TH-D75 (fw 1.03, Japan region) over USB CDC —
-every command in [`PROTOCOL.md`](PROTOCOL.md) carries its live-verified
-semantics.
+![status](https://img.shields.io/badge/status-work%20in%20progress-orange)
+
+> **⚠️ Work in progress — expect plenty of bugs.** This is a young
+> hobby project reverse-engineered in a single day against one radio
+> (TH-D75, fw 1.03, Japan region). Known rough edges: mode switching
+> over CAT is limited by the firmware to FM/DV/NFM (others are refused
+> and only toast); cross-band A/B swaps apply only the legal half; the
+> first connect attempt sometimes times out (retry); no spectrum/waterfall
+> yet; audio monitoring is Linux-only. See the issues tracker and
+> [`PROTOCOL.md`](PROTOCOL.md) for verified facts and limitations.
+
+![validation](https://img.shields.io/badge/validated--on-hardware-TH--D75%20fw%201.03-brightgreen)
+Validated against a real TH-D75 over USB CDC — every command in
+[`PROTOCOL.md`](PROTOCOL.md) carries its live-verified semantics.
 
 ## Features
 
