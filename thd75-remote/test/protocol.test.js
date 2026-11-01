@@ -164,3 +164,23 @@ test('port close rejects all pending', async () => {
   t.close();
   await assert.rejects(p, /Port closed/);
 });
+
+test('battery and VOX frames patch the state', async () => {
+  const t = new MockTransport();
+  const c = new THD75Connection(t);
+  t.rx('VX 1\r');
+  t.rx('BT 0\r');
+  t.rx('BL 3\r');
+  t.rx('BS 1\r');
+  await sleep(10);
+  assert.strictEqual(c.state.vox, true);
+  assert.strictEqual(c.state.batteryType, 0);
+  assert.strictEqual(c.state.batteryLevel, 3);
+  assert.strictEqual(c.state.batteryStatus, 1);
+  const pv = c.request('VX', ' 0');
+  await sleep(10);
+  assert.strictEqual(t.written.includes('VX 0\r'), true);
+  t.rx('VX 0\r');
+  await pv;
+  assert.strictEqual(c.state.vox, false);
+});

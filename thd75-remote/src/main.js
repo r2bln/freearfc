@@ -35,6 +35,7 @@ function stopPolling() {
 
 function startPolling() {
   stopPolling();
+  let tick = 0;
   pollTimer = setInterval(() => {
     if (!conn) return;
     conn.pollPower().catch(() => {});
@@ -42,6 +43,7 @@ function startPolling() {
     conn.pollSMeter(1).catch(() => {});
     conn.request('BY', ' 0', { wait: false }).catch(() => {});
     conn.request('BY', ' 1', { wait: false }).catch(() => {});
+    if (tick++ % 10 === 0) conn.pollBattery(); // every ~20 s
   }, 2000);
 }
 
@@ -107,7 +109,8 @@ const RPC = new Set([
   'setGps', 'getGps', 'setTnc', 'getTnc',
   'setSingleBand', 'getSingleBand', 'setBeatCancel', 'getBeatCancel',
   'setAttenuator', 'getAttenuator', 'setVfoMode', 'getVfoMode',
-  'setFmRadio', 'getFmRadio', 'setAi', 'pollSMeter', 'pollPower', 'syncAll',
+  'setFmRadio', 'getFmRadio', 'setAi', 'pollSMeter', 'pollPower', 'pollBattery', 'syncAll',
+  'setVox', 'getVox',
 ]);
 
 ipcMain.handle('ports:list', () => SerialPort.list());

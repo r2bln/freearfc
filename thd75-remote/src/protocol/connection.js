@@ -35,6 +35,10 @@ const PARSERS = {
   TN: (p) => ({ tncMode: +p[0], dataBand: +p[2] }),
   BC: (p) => ({ band: +p[0], beatCancel: +p[2] }),
   AG: (p) => ({ audioGain: +p.substr(0, 3) }),
+  VX: (p) => ({ vox: +p === 1 }),
+  BT: (p) => ({ batteryType: +p }),
+  BL: (p) => ({ batteryLevel: +p }),
+  BS: (p) => ({ batteryStatus: +p }),
   FS: (p) => ({ fineStep: +p[0] }),
   FT: (p) => ({ fine: +p[0] === 1 }),
   FR: (p) => ({ fmRadio: +p[0] === 1 }),
@@ -265,7 +269,7 @@ class THD75Connection extends EventEmitter {
       ['VM', ' 0'], ['VM', ' 1'],
       ['RA', ' 0'], ['RA', ' 1'],
       ['SF', ' 0'], ['SF', ' 1'],
-      ['AG'], ['FS'], ['FT'], ['IO'],
+      ['AG'], ['FS'], ['FT'], ['IO'], ['VX'], ['BT'], ['BL'], ['BS'],
       ['BY', ' 0'], ['BY', ' 1'],
       ['SM', ' 0'], ['SM', ' 1'],
     ];
@@ -345,6 +349,16 @@ class THD75Connection extends EventEmitter {
 
   pollSMeter(band) { return this.request('SM', ` ${band}`, { wait: false }); }
   pollPower() { return this.request('PS', '', { wait: false }); }
+  pollBattery() {
+    return Promise.all([
+      this.request('BL', '', { wait: false }),
+      this.request('BS', '', { wait: false }),
+    ]).catch(() => {});
+  }
+
+  /** VOX: the only CAT-reachable transmit trigger (no PTT command exists). */
+  setVox(on) { return this.request('VX', ` ${on ? 1 : 0}`); }
+  getVox() { return this.request('VX'); }
 
   _pushLog(direction, frame) {
     this.log.push({ t: Date.now(), direction, frame });
@@ -371,6 +385,10 @@ function freshState() {
     singleBand: 0,
     gps: false,
     gpsPcOutput: false,
+    vox: false,
+    batteryLevel: null,
+    batteryStatus: null,
+    batteryType: null,
     tncMode: 0,
     dataBand: 0,
     subBand: false,

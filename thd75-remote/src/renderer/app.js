@@ -73,6 +73,9 @@ function reflect(state) {
     $('infoFw').textContent = 'FW: ' + (state.firmware || '?');
     $('infoRegion').textContent = 'Region: ' + (state.regionName || '?');
     $('infoPower').textContent = 'Power: ' + state.power;
+    if (state.batteryLevel !== null && state.batteryLevel !== undefined) {
+      $('infoBatt').textContent = 'Battery: ' + ['▁', '▃', '▅', '█'][state.batteryLevel] + ' ' + state.batteryLevel + '/3';
+    }
     $('infoIo').textContent = 'USB out: ' + ['AF', 'IF', 'Detect'][state.ioMode] || '?';
 
     for (const [band, key] of [['A', 'aBand'], ['B', 'bBand']]) {
@@ -99,6 +102,7 @@ function reflect(state) {
     $('gpsPc').checked = !!state.gpsPcOutput;
     $('tncOn').checked = state.tncMode !== 0;
     $('singleBand').checked = state.singleBand !== 0;
+    $('voxOn').checked = !!state.vox;
     $('fineTune').checked = !!state.fine;
     $('fineStep').value = String(state.fineStep);
   } finally {
@@ -351,6 +355,7 @@ function wire() {
   $('gpsPc').onchange = () => { if (!applyingUi) rpc('setGps', $('gpsOn').checked ? 1 : 0, $('gpsPc').checked ? 1 : 0); };
   $('tncOn').onchange = () => { if (!applyingUi) rpc('setTnc', $('tncOn').checked ? 1 : 0, 1); };
   $('singleBand').onchange = () => { if (!applyingUi) rpc('setSingleBand', $('singleBand').checked ? 1 : 0); };
+  $('voxOn').onchange = () => { if (!applyingUi) rpc('setVox', $('voxOn').checked); };
   $('fineTune').onchange = () => { if (!applyingUi) rpc('setFine', $('fineTune').checked); };
   $('fineStep').onchange = () => { if (!applyingUi) rpc('setFineStep', Number($('fineStep').value)); };
 

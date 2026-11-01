@@ -105,6 +105,31 @@ not the human value.
 | `GW` | — | `GW` | `0..2` | DV gateway (read-only check) |
 | `DL` | `DL 0\|1` | `DL` | `0\|1` | Single(1)/dual(0) band |
 | `FR` | `FR 0\|1` | `FR` | `0\|1` | FM broadcast radio mode |
+| `VX` | `VX 0\|1` | `VX` | `0\|1` | VOX on/off (menu 150); the only CAT-reachable transmit trigger |
+| `BT` | — | `BT` | `n` | Battery type (live: `BT 0`) |
+| `BL` | — | `BL` | `n` | Battery level, live `0..3` scale (live: `BL 3` full) |
+| `BS` | — | `BS` | `n` | Battery status (live: `BS 1`) |
+| `RT` | — | `RT` | `yymmddhhmmss` | Real-time clock (live-confirmed, matches wall clock) |
+| `PT` | `PT n` | `PT` | `0..3` | APRS beacon mode: 0 manual, 1 PTT, 2 auto, 3 SmartBeaconing |
+| `LC` | — | `LC` | `n` | LCD/backlight level? (live: `LC 3`) |
+| `MS`/`GM`/`AS` | — | — | — | Answer on D75 (live); meaning per TH-D74 docs (memory scan / GPS mode / TNC baud) |
+
+## Commands NOT supported by the TH-D75 firmware (live-verified)
+
+- `TX` — answered with `?` (unknown command) for both bare and `TX 1`
+  forms; no key-up, no AI frames. The TH-D74 documents `TX`/`RX` as
+  PTT; on the D75 firmware 1.03 there is **no CAT PTT command**. `RX`
+  alone is answered with an `RX` echo (receive/PTT-off confirmation).
+- `CS`, `DC`, `BE`, `SQ`, `SR`, `GS`, `AE`, `MR`, `FO`, `DS`, `PC` —
+  answered with `?` (part of the TH-D74 command set, absent here).
+
+## USB audio
+
+The USB composite device exposes CDC×2 + one UAC **capture-only**
+endpoint (`/proc/asound/THD75/stream0`: mono S16_LE 48 kHz, endpoint
+0x83 IN). There is **no playback endpoint**: PC→radio audio injection
+over USB is impossible; the capture stream carries the AF/IF/Detect
+signal selected by `IO`.
 
 ## Async (AI) frames
 
