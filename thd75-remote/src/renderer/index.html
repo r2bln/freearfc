@@ -26,10 +26,17 @@
 </section>
 
 <main>
+  <!-- Per-band cards (half width each) -->
   <div class="bands">
     <div class="band card" id="bandA">
       <div class="band-title">Band A <span class="vm btn" id="vmA" title="Click to toggle VFO / Memory"></span></div>
       <div class="freq" id="freqA">---.----- MHz</div>
+      <div class="row">
+        <input class="freq-entry" id="freqEntryA" type="text" inputmode="decimal"
+               placeholder="145.500000" size="11" title="Type a MHz value and press Enter">
+        <button id="applyFreqA">Set</button>
+        <span class="tiny">scroll the card to tune</span>
+      </div>
       <div class="row tunebar">
         <button class="knob" id="dnA" title="Tune down (hold to repeat)">&#9660;</button>
         <select class="mult" id="multA" title="Steps per click"></select>
@@ -53,6 +60,12 @@
     <div class="band card" id="bandB">
       <div class="band-title">Band B <span class="vm btn" id="vmB" title="Click to toggle VFO / Memory"></span></div>
       <div class="freq" id="freqB">---.----- MHz</div>
+      <div class="row">
+        <input class="freq-entry" id="freqEntryB" type="text" inputmode="decimal"
+               placeholder="433.500000" size="11" title="Type a MHz value and press Enter">
+        <button id="applyFreqB">Set</button>
+        <span class="tiny">scroll the card to tune</span>
+      </div>
       <div class="row tunebar">
         <button class="knob" id="dnB" title="Tune down (hold to repeat)">&#9660;</button>
         <select class="mult" id="multB" title="Steps per click"></select>
@@ -75,32 +88,34 @@
     </div>
   </div>
 
-  <div class="tune card">
-    <div class="card-title">VFO</div>    <div class="row">
-      <label>Band</label>
-      <select id="tuneBand"><option value="0">A</option><option value="1" selected>B</option></select>
-      <label>Freq&nbsp;(MHz)</label>
-      <input id="freqEntry" type="text" inputmode="decimal" placeholder="145.500000" size="11">
-      <button id="applyFreq">Set</button>
-    </div>
+  <!-- Band-wide controls -->
+  <div class="vfo card">
+    <div class="card-title">VFO</div>
     <div class="row">
-      <button class="step" data-n="0">&#8722;1</button>
-      <button class="step" data-n="1">&#8722;2</button>
-      <button class="step" data-n="2">&#8722;5</button>
-      <button class="step" data-n="3">&#8722;10</button>
-      <button class="step" data-n="4">&#8722;50</button>
-      <button class="step" data-n="5">&#8722;100</button>
+      <span class="seg" id="activeBandSeg">
+        <button class="segbtn" data-b="0">A</button>
+        <button class="segbtn" data-b="1">B</button>
+      </span>
+      <span class="tiny" id="activeBandHint">active band (highlighted card)</span>
       <span class="sep"></span>
-      <button class="step up" data-n="0">+1</button>
-      <button class="step up" data-n="1">+2</button>
-      <button class="step up" data-n="2">+5</button>
-      <button class="step up" data-n="3">+10</button>
-      <button class="step up" data-n="4">+50</button>
-      <button class="step up" data-n="5">+100</button>
+      <label>Band layout</label>
+      <span class="seg" id="bandLayoutSeg">
+        <button class="segbtn" data-v="0" title="Both bands on the radio display">2 VFO</button>
+        <button class="segbtn" data-v="1" title="Single band on the radio display">1 VFO</button>
+      </span>
       <span class="sep"></span>
       <label>Fine</label><input type="checkbox" id="fineTune">
       <select id="fineStep"></select>
     </div>
+  </div>
+
+  <div class="pttrow card">
+    <button id="pttBtn" class="ptt-big"
+            title="Hold to transmit on the radio's TX band (bare TX; JP unit: 2 m / 70 cm only)">
+      HOLD&nbsp;TO&nbsp;TRANSMIT
+    </button>
+    <span class="led big" id="txLed" title="Transmitting"></span>
+    <span id="txBandInfo" class="tiny"></span>
   </div>
 
   <div class="radio card">
@@ -112,48 +127,47 @@
         <option value="1">IF output</option>
         <option value="2">Detect output</option>
       </select>
-      <label>Volume</label>
-      <button id="volDown">&#8722;</button><span id="volVal">-</span><button id="volUp">+</button>
-    </div>
-    <div class="row">
-      <label>GPS</label><input type="checkbox" id="gpsOn">
-      <label>GPS&rarr;PC</label><input type="checkbox" id="gpsPc">
-      <label>TNC</label><input type="checkbox" id="tncOn">
-      <label>Single&nbsp;band</label><input type="checkbox" id="singleBand">
-      <label title="Voice-activated transmit: the only CAT-reachable TX trigger (the radio has no PTT command and no USB-audio input)">VOX</label>
-      <input type="checkbox" id="voxOn">
-    </div>
-    <div class="row">
       <label>Monitor&rarr;speakers</label>
       <button id="audioToggle" title="Loopback the radio USB-audio (AF/IF/Detect, per USB out) to the default output">Off</button>
       <span class="tiny" id="audioInfo"></span>
     </div>
     <div class="row">
-      <label>PTT</label>
-      <button id="pttBtn" class="ptt" title="Hold to transmit on the radio's TX band (bare TX; JP unit: 2 m / 70 cm only)">HOLD&nbsp;TO&nbsp;TX</button>
-      <span class="led" id="txLed" title="Transmitting"></span>
-      <span class="tiny" id="txBandInfo"></span>
+      <label>Volume</label>
+      <input type="range" id="volSlider" min="0" max="200" step="1" value="0" class="vol" title="Scroll or drag">
+      <input type="number" id="volNum" min="0" max="200" step="1" value="0" class="volnum" title="AF gain 0..200">
+    </div>
+    <div class="row">
+      <label>GPS</label><input type="checkbox" id="gpsOn">
+      <label>GPS&rarr;PC</label><input type="checkbox" id="gpsPc">
+      <label>TNC</label><input type="checkbox" id="tncOn">
+      <label title="Voice-activated transmit from the radio's own mic">VOX</label><input type="checkbox" id="voxOn">
     </div>
   </div>
 
   <div class="channels card">
-    <div class="card-title">Channels
-      <span class="tiny">PC-side list; the CAT protocol cannot read the radio&rsquo;s memory bank</span>
+    <div class="card-title">Local memory
+      <span class="tiny">stored on this computer &mdash; the radio&rsquo;s own memory bank is not reachable over CAT</span>
     </div>
     <div class="row">
       <button id="addChA" title="Store Band A frequency and mode">+ from A</button>
       <button id="addChB" title="Store Band B frequency and mode">+ from B</button>
-      <span class="tiny">&#8594;A / &#8594;B recalls a channel into that band (switches it to VFO)</span>
+      <span class="tiny">&#8594;A / &#8594;B recalls an entry into that band (switches it to VFO)</span>
     </div>
     <div id="chanList" class="chan-list"></div>
   </div>
 
-  <div class="log card">
-    <div class="card-title">
-      Frame log
-      <label class="tiny"><input type="checkbox" id="logEnabled" checked> show</label>
+  <div class="log card" id="logCard">
+    <div class="card-title">Logs
+      <span class="tabs">
+        <button class="tabbtn" data-tab="app">App</button>
+        <button class="tabbtn" data-tab="cat" id="defaultTab">CAT</button>
+      </span>
+      <button id="logCollapse" title="Show / hide the log panel">&#8722;</button>
     </div>
-    <pre id="log"></pre>
+    <div id="logBody">
+      <pre id="log" class="hidden"></pre>
+      <pre id="appLog"></pre>
+    </div>
   </div>
 </main>
 
