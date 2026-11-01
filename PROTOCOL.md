@@ -91,7 +91,7 @@ not the human value.
 | `DW` | `DW nnn` | — | — | Frequency −N steps, same encoding |
 | `MD` | `MD b,m` | `MD b` | `b,m` | Mode, m = 0 FM, 1 NFM, 2 WFM, 3 AM, 4 LSB, 5 USB, 6 CW, 9 DV |
 | `VM` | `VM b,v` | `VM b` | `b,v` | VFO mode v = 0 VFO, 1 Memory, 2 Call, 3 Weather |
-| `SF` | `SF b,XXXX` | `SF b` | `b,s` | Step: set = Hz value as **UPPERCASE HEX** (5 kHz → `1388`); response `s` = **step index** `0..11` (live-verified: `SF 1` → `SF 1,1`). Values: 5000,6250,8330,9000,10000,12500,15000,20000,25000,30000,50000,100000 |
+| `SF` | `SF b,X` | `SF b` | `b,s` | Step: set `X` = step **INDEX in uppercase hex** (live: `SF 1,1` → 6.25 kHz, `SF 1,B` → 100 kHz); response `s` = decimal index `0..11`. Values: 5000,6250,8330,9000,10000,12500,15000,20000,25000,30000,50000,100000 |
 | `FS` | `FS i` | `FS` | `i` | Fine step idx: 0→20 Hz, 1→100, 2→500, 3→1000 |
 | `FT` | `FT 0\|1` | `FT` | `0\|1` | Fine tuning on/off |
 | `AG` | `AG nnn` | `AG` | `nnn` | AF gain level, 3 digits (live: `006`); range not clamped |
@@ -157,11 +157,15 @@ unmatched frames are ignored.
 - An applied `FQ` set is **absolute**: targets on the step grid are applied
   exactly (live: 446.100/446.200/446.050 MHz applied as sent); off-grid
   targets snap DOWN to the grid (446.123456 with a 5 kHz step → 446.120000).
-- An `SF` set is accepted or silently refused per mode: `SF 1,2` (8330 Hz)
-  was refused in VFO/FM (step stayed 5000); plain multiples applied fine.
+- An `SF` set carries the step index in hex; an earlier note claiming
+  Hz-as-hex (and a "silently refused per mode" 8330 case) was wrong —
+  that wire format is simply ignored by the radio.
 - VFO tuning (FQ/UP/DW/SF sets) only applies in VFO mode; switch with
   `VM b,0|1` first. Switching VFO→Memory triggers an AI burst restoring the
   channel's FQ/MD/SF/VM state (live: recall of 446.093750/CW/6250).
+- In single-band mode (`DL 1`, set/echo live-verified) SETs targeting the
+  inactive band are refused with `N` — e.g. `VM 0,n` while only band B is
+  active. `DL 0` re-enables both bands.
 
 ## Error handling
 

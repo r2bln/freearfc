@@ -98,10 +98,14 @@ class THD75Connection extends EventEmitter {
     this._pushLog('rx', frame);
     if (frame.length === 1) {
       // Live-verified: SET commands are answered with a single-char frame
-      // ('N', or '?' for raw/wake frames) instead of a command echo. The
-      // original client treats ANY single-char frame as a wake-up pulse
-      // for the oldest waiter, and so do we.
+      // — 'N' when the radio refuses (e.g. band inactive in single-band
+      // mode, out-of-range values), '?' for raw/wake frames — instead of
+      // a command echo. The original client treats ANY single-char frame
+      // as a wake-up pulse for the oldest waiter, and so do we; but a
+      // refusal deserves a visible warning naming the command.
+      const refused = frame === 'N';
       const w = this._takeOldestPending();
+      if (refused) this.emit('warning', `Radio refused ${w ? w.cmd : 'the last SET'} (N)`);
       if (w) w.resolve(null);
       return;
     }
@@ -311,11 +315,14 @@ class THD75Connection extends EventEmitter {
   setMode(band, mode) { return this.request('MD', ` ${band},${mode}`); }
   getMode(band) { return this.request('MD', ` ${band}`); }
 
-  /** stepIdx: index into STEPS_HZ; wire value is the Hz value as hex. */
+  /**
+   * stepIdx: index into STEPS_HZ. Live-verified wire format: the SET
+   * value is the step INDEX in uppercase hex (SF 1,1 → 6.25 kHz), while
+   * the GET/echo payload carries the decimal index (SF 1,1).
+   */
   setStep(band, stepIdx) {
-    const hz = STEPS_HZ[stepIdx];
-    if (hz === undefined) throw new RangeError('bad step index');
-    return this.request('SF', ` ${band},${hz.toString(16).toUpperCase()}`);
+    if (stepIdx < 0 || stepIdx >= STEPS_HZ.length) throw new RangeError('bad step index');
+    return this.request('SF', ` ${band},${stepIdx.toString(16).toUpperCase()}`);
   }
   getStep(band) { return this.request('SF', ` ${band}`); }
 

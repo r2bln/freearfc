@@ -13,7 +13,6 @@
     <button id="refreshPorts" title="Rescan ports">&#x21bb;</button>
     <button id="connectBtn" class="primary">Connect</button>
     <span id="connStatus" class="status">disconnected</span>
-    <button id="skinBtn" class="skinbtn" title="Toggle Winamp Classic skin">WA</button>
   </div>
 </header>
 
@@ -23,6 +22,7 @@
   <span id="infoRegion"></span>
   <span id="infoPower"></span>
   <span id="infoBatt"></span>
+  <span id="infoSingle" class="hidden">Single band</span>
   <span id="infoIo"></span>
 </section>
 
@@ -99,12 +99,6 @@
       </span>
       <span class="tiny" id="activeBandHint">active band (highlighted card)</span>
       <span class="sep"></span>
-      <label>Band layout</label>
-      <span class="seg" id="bandLayoutSeg">
-        <button class="segbtn" data-v="0" title="Both bands on the radio display">2 VFO</button>
-        <button class="segbtn" data-v="1" title="Single band on the radio display">1 VFO</button>
-      </span>
-      <span class="sep"></span>
       <label>Fine</label><input type="checkbox" id="fineTune">
       <select id="fineStep"></select>
     </div>
@@ -122,14 +116,8 @@
   <div class="radio card">
     <div class="card-title">Radio</div>
     <div class="row">
-      <label>USB out</label>
-      <select id="ioMode">
-        <option value="0">AF output</option>
-        <option value="1">IF output</option>
-        <option value="2">Detect output</option>
-      </select>
       <label>Monitor&rarr;speakers</label>
-      <button id="audioToggle" title="Loopback the radio USB-audio (AF/IF/Detect, per USB out) to the default output">Off</button>
+      <button id="audioToggle" title="Loopback the radio's USB-audio output to the default output">Off</button>
       <span class="tiny" id="audioInfo"></span>
     </div>
     <div class="row">
@@ -147,14 +135,18 @@
 
   <div class="channels card">
     <div class="card-title">Local memory
-      <span class="tiny">stored on this computer &mdash; the radio&rsquo;s own memory bank is not reachable over CAT</span>
+      <span class="tiny">stored on this computer; click a row to recall it into its band (switches the band to VFO)</span>
     </div>
-    <div class="row">
-      <button id="addChA" title="Store Band A frequency and mode">+ from A</button>
-      <button id="addChB" title="Store Band B frequency and mode">+ from B</button>
-      <span class="tiny">&#8594;A / &#8594;B recalls an entry into that band (switches it to VFO)</span>
+    <div class="chan-columns">
+      <div class="chan-col" id="chanColA">
+        <div class="chan-col-head">Band A <button id="addChA" title="Store Band A frequency and mode">+</button></div>
+        <div class="chan-list" id="chanListA"></div>
+      </div>
+      <div class="chan-col" id="chanColB">
+        <div class="chan-col-head">Band B <button id="addChB" title="Store Band B frequency and mode">+</button></div>
+        <div class="chan-list" id="chanListB"></div>
+      </div>
     </div>
-    <div id="chanList" class="chan-list"></div>
   </div>
 
   <div class="log card" id="logCard">

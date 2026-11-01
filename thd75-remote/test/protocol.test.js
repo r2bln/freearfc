@@ -65,12 +65,15 @@ test('setFrequency wire format matches original (D10, band,payload)', async () =
   assert.strictEqual(c.state.bBand.frequencyHz, 430000000);
 });
 
-test('setStep encodes Hz value as uppercase hex', async () => {
+test('setStep encodes the step INDEX as uppercase hex (live-verified)', async () => {
   const t = new MockTransport();
   const c = new THD75Connection(t);
-  c.setStep(0, 0).catch(() => {}); // 5 kHz -> 0x1388
+  c.setStep(0, 0).catch(() => {}); // 5 kHz = index 0 -> 'SF 0,0'
   await sleep(10);
-  assert.strictEqual(t.written[0], 'SF 0,1388\r');
+  assert.strictEqual(t.written[0], 'SF 0,0\r');
+  c.setStep(1, 11).catch(() => {}); // 100 kHz = index 11 -> 'B'
+  await sleep(10);
+  assert.strictEqual(t.written.includes('SF 1,B\r'), true);
 });
 
 test('SM response updates s-meter and busy', async () => {

@@ -100,7 +100,7 @@ function reflect(state) {
       $('sm' + band).style.width = Math.min(100, (b.sMeter / 9) * 100) + '%';
     }
 
-    $('ioMode').value = String(state.ioMode);
+    $('infoSingle').classList.toggle('hidden', !state.singleBand);
     $('volSlider').value = String(state.audioGain);
     $('volNum').value = String(state.audioGain);
     $('gpsOn').checked = !!state.gps;
@@ -113,7 +113,6 @@ function reflect(state) {
     $('txBandInfo').textContent = state.transmitting
       ? 'TX on band ' + 'AB'[state.txBand ?? 0]
       : '';
-    reflectBandLayout(state.singleBand);
   } finally {
     applyingUi = false;
   }
@@ -125,12 +124,6 @@ function reflectActiveBand() {
   }
   for (const btn of $('activeBandSeg').querySelectorAll('.segbtn')) {
     btn.classList.toggle('on', Number(btn.dataset.b) === activeBand);
-  }
-}
-
-function reflectBandLayout(singleBand) {
-  for (const btn of $('bandLayoutSeg').querySelectorAll('.segbtn')) {
-    btn.classList.toggle('on', Number(btn.dataset.v) === (singleBand ? 1 : 0));
   }
 }
 
@@ -252,7 +245,15 @@ function setVolumeFromUi(level) {
 const CH_KEY = 'thd75.channels';
 
 function loadChans() {
-  try { return JSON.parse(localStorage.getItem(CH_KEY)) || []; } catch { return []; }
+  let chans;
+  try { chans = JSON.parse(localStorage.getItem(CH_KEY)) || []; } catch { chans = []; }
+  // v1 entries had no band column; migrate them into Band A.
+  let migrated = false;
+  for (const ch of chans) {
+    if (ch.band !== 0 && ch.band !== 1) { ch.band = 0; migrated = true; }
+  }
+  if (migrated) localStorage.setItem(CH_KEY, JSON.stringify(chans));
+  return chans;
 }
 function saveChans(chans) {
   localStorage.setItem(CH_KEY, JSON.stringify(chans));
@@ -263,15 +264,16 @@ function addChan(band) {
   const b = band === 0 ? lastState.aBand : lastState.bBand;
   if (!b || !b.frequencyHz) { toast('No frequency to store yet'); return; }
   const chans = loadChans();
-  chans.push({ name: fmtMHz(b.frequencyHz), freqHz: b.frequencyHz, mode: b.mode });
+  chans.push({ name: fmtMHz(b.frequencyHz), freqHz: b.frequencyHz, mode: b.mode, band });
   saveChans(chans);
-  appLog('local memory: stored ' + fmtMHz(b.frequencyHz) + ' from band ' + 'AB'[band]);
+  appLog('local memory: stored ' + fmtMHz(b.frequencyHz) + ' into band ' + 'AB'[band]);
 }
 
-/** Recall: force the target band to VFO, then apply mode and frequency. */
-function recallChan(i, band) {
+/** Recall into the entry's own band: force VFO, then mode and frequency. */
+function recallChan(i) {
   const ch = loadChans()[i];
   if (!ch) return;
+  const band = ch.band === 1 ? 1 : 0;
   appLog('local memory: recalling ' + (ch.name || fmtMHz(ch.freqHz)) + ' → band ' + 'AB'[band]);
   rpc('setVfoMode', band, 0)
     .then(() => rpc('setMode', band, Number(ch.mode) || 0))
@@ -280,58 +282,55 @@ function recallChan(i, band) {
 }
 
 function renderChans() {
-  const host = $('chanList');
-  host.innerHTML = '';
   const chans = loadChans();
-  if (!chans.length) {
-    const empty = document.createElement('div');
-    empty.className = 'tiny';
-    empty.textContent = '(empty — store the current band with “+ from A/B”)';
-    host.appendChild(empty);
-    return;
-  }
-  chans.forEach((ch, i) => {
-    const row = document.createElement('div');
-    row.className = 'chan-row';
-
-    const name = document.createElement('input');
-    name.type = 'text'; name.className = 'ch-name'; name.value = ch.name || '';
-    name.onchange = () => { const c = loadChans(); c[i].name = name.value; saveChans(c); };
-    row.appendChild(name);
-
-    const freq = document.createElement('span');
-    freq.className = 'ch-freq';
-    freq.textContent = (ch.freqHz / 1e6).toFixed(5);
-    row.appendChild(freq);
-
-    const mode = document.createElement('select');
-    mode.className = 'ch-mode';
-    MODE.forEach((m, mi) => {
-      const o = document.createElement('option');
-      o.value = String(mi); o.textContent = m || '(reserved)';
-      if (!m) o.disabled = true;
-      mode.appendChild(o);
-    });
-    mode.value = String(ch.mode || 0);
-    mode.onchange = () => { const c = loadChans(); c[i].mode = Number(mode.value); saveChans(c); };
-    row.appendChild(mode);
-
-    for (const [label, band] of [['\u2192A', 0], ['\u2192B', 1]]) {
-      const btn = document.createElement('button');
-      btn.textContent = label;
-      btn.title = 'Recall into band ' + 'AB'[band];
-      btn.onclick = () => recallChan(i, band);
-      row.appendChild(btn);
+  for (const [hostId, band] of [['chanListA', 0], ['chanListB', 1]]) {
+    const host = $(hostId);
+    host.innerHTML = '';
+    const own = chans.map((ch, i) => [ch, i]).filter(([ch]) => (ch.band === 1 ? 1 : 0) === band);
+    if (!own.length) {
+      const empty = document.createElement('div');
+      empty.className = 'tiny';
+      empty.textContent = '(empty — “+” stores the current band)';
+      host.appendChild(empty);
+      continue;
     }
+    for (const [ch, i] of own) {
+      const row = document.createElement('div');
+      row.className = 'chan-row';
+      row.title = 'Click to recall into band ' + 'AB'[band];
+      row.onclick = (e) => { if (!e.target.closest('input, select, button')) recallChan(i); };
 
-    const del = document.createElement('button');
-    del.className = 'ch-del'; del.textContent = '\u00d7';
-    del.title = 'Delete entry';
-    del.onclick = () => { const c = loadChans(); c.splice(i, 1); saveChans(c); };
-    row.appendChild(del);
+      const name = document.createElement('input');
+      name.type = 'text'; name.className = 'ch-name'; name.value = ch.name || '';
+      name.onchange = () => { const c = loadChans(); c[i].name = name.value; saveChans(c); };
+      row.appendChild(name);
 
-    host.appendChild(row);
-  });
+      const freq = document.createElement('span');
+      freq.className = 'ch-freq';
+      freq.textContent = (ch.freqHz / 1e6).toFixed(5);
+      row.appendChild(freq);
+
+      const mode = document.createElement('select');
+      mode.className = 'ch-mode';
+      MODE.forEach((m, mi) => {
+        const o = document.createElement('option');
+        o.value = String(mi); o.textContent = m || '(reserved)';
+        if (!m) o.disabled = true;
+        mode.appendChild(o);
+      });
+      mode.value = String(ch.mode || 0);
+      mode.onchange = () => { const c = loadChans(); c[i].mode = Number(mode.value); saveChans(c); };
+      row.appendChild(mode);
+
+      const del = document.createElement('button');
+      del.className = 'ch-del'; del.textContent = '\u00d7';
+      del.title = 'Delete entry';
+      del.onclick = () => { const c = loadChans(); c.splice(i, 1); saveChans(c); };
+      row.appendChild(del);
+
+      host.appendChild(row);
+    }
+  }
 }
 
 // ---------------------------------------------------------------- app log
@@ -377,14 +376,6 @@ function wire() {
     btn.onclick = () => { activeBand = Number(btn.dataset.b); reflectActiveBand(); };
   }
 
-  // 2 VFO / 1 VFO (radio band layout, DL)
-  for (const btn of $('bandLayoutSeg').querySelectorAll('.segbtn')) {
-    btn.onclick = () => {
-      if (applyingUi || !connected) return;
-      rpc('setSingleBand', Number(btn.dataset.v));
-    };
-  }
-
   // Volume: slider, number field, and wheel over both
   $('volSlider').addEventListener('input', () => setVolumeFromUi(Number($('volSlider').value)));
   $('volNum').addEventListener('change', () => setVolumeFromUi(Number($('volNum').value || 0)));
@@ -397,7 +388,6 @@ function wire() {
     }, { passive: false });
   }
 
-  $('ioMode').onchange = () => { if (!applyingUi) rpc('setIoMode', Number($('ioMode').value)); };
   $('gpsOn').onchange = () => { if (!applyingUi) rpc('setGps', $('gpsOn').checked ? 1 : 0, $('gpsPc').checked ? 1 : 0); };
   $('gpsPc').onchange = () => { if (!applyingUi) rpc('setGps', $('gpsOn').checked ? 1 : 0, $('gpsPc').checked ? 1 : 0); };
   $('tncOn').onchange = () => { if (!applyingUi) rpc('setTnc', $('tncOn').checked ? 1 : 0, 1); };
@@ -495,18 +485,5 @@ function wire() {
 initControls();
 wire();
 reflectActiveBand();
-
-// Skin toggle (default dark; Winamp Classic is the fun mode).
-{
-  const KEY = 'thd75.skin';
-  const apply = (on) => {
-    document.body.classList.toggle('winamp', on);
-    $('skinBtn').classList.toggle('on', on);
-    try { localStorage.setItem(KEY, on ? 'winamp' : 'dark'); } catch { /* private mode */ }
-  };
-  $('skinBtn').onclick = () => apply(!document.body.classList.contains('winamp'));
-  try { apply(localStorage.getItem(KEY) === 'winamp'); } catch { /* keep default */ }
-}
-
 refreshPorts().catch((e) => toast(e.message));
 appLog('TH-D75 Remote started');
