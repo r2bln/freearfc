@@ -86,7 +86,7 @@ not the human value.
 | `GW` | — | `GW` | `0..2` | DV gateway mode (must be 0 to connect) |
 | `AI` | `AI 0\|1` | `AI` | `0\|1` | Auto-information on/off; async frames follow changes |
 | `RX` | — | `RX` | — | Receiver reset (sent once during init) |
-| `FQ` | `FQ b,ffffffffff` | `FQ b` | `b,ffffffffff` | Frequency, **D10 in units of 10 Hz** (145 MHz = `0145000000`) |
+| `FQ` | `FQ b,ffffffffff` | `FQ b` | `b,ffffffffff` | Frequency, **D10 in HERTZ** (live: `0144800000` = 144.800 MHz) |
 | `UP` | `UP nnn` | — | — | Frequency +N steps, nnn = index into [1,2,5,10,50,100] = `000..005` |
 | `DW` | `DW nnn` | — | — | Frequency −N steps, same encoding |
 | `MD` | `MD b,m` | `MD b` | `b,m` | Mode, m = 0 FM, 1 NFM, 2 WFM, 3 AM, 4 LSB, 5 USB, 6 CW, 9 DV |

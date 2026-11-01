@@ -19,7 +19,8 @@ const WAKE_DELAY_MS = 80;
 
 /** Command table: wire command -> { parse(payload) -> patch, event } */
 const PARSERS = {
-  FQ: (p) => ({ band: +p[0], frequency10Hz: Number.parseInt(p.substr(2, 10), 10) }),
+  // Live-verified: value is HERTZ (FQ 0,0144800000 = 144.800 MHz).
+  FQ: (p) => ({ band: +p[0], frequencyHz: Number.parseInt(p.substr(2, 10), 10) }),
   MD: (p) => ({ band: +p[0], mode: +p[2] }),
   VM: (p) => ({ band: +p[0], vfoMode: +p[2] }),
   RA: (p) => ({ band: +p[0], attenuator: +p[2] }),
@@ -88,15 +89,10 @@ class THD75Connection extends EventEmitter {
   _onFrame(frame) {
     this._pushLog('rx', frame);
     if (frame === '?') {
-      if (Date.now() < this.rejectGraceUntil) {
-        this.emit('warning', 'spurious ? (settling after handshake)');
-        return;
-      }
-      // Live-verified: the radio answers raw/empty frames with '?' and
-      // delivers queued replies batched with the NEXT request, so a lone
-      // '?' is not attributable to a specific pending command. The
-      // original client also only uses it as a wake-up signal.
-      this.emit('reject');
+      // Live-verified: the radio answers every raw/empty/wake frame with
+      // '?' and delivers queued replies batched with the NEXT request, so
+      // a '?' is never attributable to a specific pending command. Treat
+      // it as pure noise; genuine rejections surface via timeout.
       return;
     }
     if (frame.length < 2) return;
@@ -220,7 +216,7 @@ class THD75Connection extends EventEmitter {
       await this._send(line);
       await sleep(60);
     }
-    this.rejectGraceUntil = Date.now() + 1200;
+    this.rejectGraceUntil = Date.now() + 1200; // informational only
   }
 
   /**
@@ -242,31 +238,36 @@ class THD75Connection extends EventEmitter {
     return { id, state: this.state };
   }
 
-  /** Initial sync: read identity and full radio state (frmMainViewModel o()). */
+  /**
+   * Initial sync: read identity and full radio state (frmMainViewModel o()).
+   * Live-verified against fw 1.03: every listed command except SH answers;
+   * SH has no read form without parameters (the original never reads it on
+   * connect), so it is skipped. A single command timing out degrades to a
+   * warning instead of failing the connection.
+   */
   async syncAll() {
-    await this.request('TY');
-    await this.request('PS');
-    await this.request('FV');
-    await this.request('AI');
-    await this.setAi(true);
-    await this.request('RX');
-    await this.request('FR');
-    await this.request('GP');
-    await this.request('TN');
-    await this.request('DL');
-    await this.request('BC');
-    await this.request('FQ', ' 0'); await this.request('FQ', ' 1');
-    await this.request('MD', ' 0'); await this.request('MD', ' 1');
-    await this.request('VM', ' 0'); await this.request('VM', ' 1');
-    await this.request('RA', ' 0'); await this.request('RA', ' 1');
-    await this.request('SF', ' 0'); await this.request('SF', ' 1');
-    await this.request('SH');
-    await this.request('AG');
-    await this.request('FS');
-    await this.request('FT');
-    await this.request('BY');
-    await this.request('SM', ' 0'); await this.request('SM', ' 1');
-    await this.request('IO');
+    const reads = [
+      ['TY'], ['PS'], ['FV'], ['AI'], ['RX'], ['FR'], ['GP'], ['TN'],
+      ['DL'], ['BC'],
+      ['FQ', ' 0'], ['FQ', ' 1'],
+      ['MD', ' 0'], ['MD', ' 1'],
+      ['VM', ' 0'], ['VM', ' 1'],
+      ['RA', ' 0'], ['RA', ' 1'],
+      ['SF', ' 0'], ['SF', ' 1'],
+      ['AG'], ['FS'], ['FT'], ['IO'],
+      ['BY', ' 0'], ['BY', ' 1'],
+      ['SM', ' 0'], ['SM', ' 1'],
+    ];
+    for (const [cmd, params] of reads) {
+      try {
+        await this.request(cmd, params || '');
+      } catch (err) {
+        this.emit('warning', `sync: ${cmd} failed (${err.message})`);
+      }
+    }
+    // Enable auto-information like the original so panel changes on the
+    // radio itself stream to us. Fire-and-forget: never fails the connect.
+    this.setAi(true).catch(() => {});
     return this.state;
   }
 
@@ -278,9 +279,9 @@ class THD75Connection extends EventEmitter {
 
   setAi(on) { return this.request('AI', ` ${on ? 1 : 0}`, { wait: false }); }
 
-  /** frequency10Hz: frequency in units of 10 Hz, as the radio expects. */
-  setFrequency(band, frequency10Hz) {
-    return this.request('FQ', ` ${band},${String(frequency10Hz).padStart(10, '0')}`);
+  /** frequencyHz: frequency in hertz, zero-padded to 10 digits. */
+  setFrequency(band, frequencyHz) {
+    return this.request('FQ', ` ${band},${String(frequencyHz).padStart(10, '0')}`);
   }
 
   getFrequency(band) { return this.request('FQ', ` ${band}`); }
@@ -371,7 +372,7 @@ function freshState() {
 
 function bandState() {
   return {
-    frequency10Hz: 0,
+    frequencyHz: 0,
     mode: 0,
     vfoMode: 0,
     attenuator: 0,

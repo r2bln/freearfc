@@ -6,10 +6,9 @@ const $ = (id) => document.getElementById(id);
 let connected = false;
 let applyingUi = false; // suppress change handlers while reflecting radio state
 
-function fmtMHz(freq10) {
-  if (!freq10) return '---.-----';
-  const mhz = freq10 / 100000;
-  let s = mhz.toFixed(5); // 10 Hz resolution
+function fmtMHz(freqHz) {
+  if (!freqHz) return '---.-----';
+  const s = (freqHz / 1e6).toFixed(6); // Hz resolution
   const dot = s.indexOf('.');
   return s.slice(0, dot) + '.' + s.slice(dot + 1, dot + 4) + ' ' + s.slice(dot + 4);
 }
@@ -112,8 +111,8 @@ function bandOfTuneSelect() { return Number($('tuneBand').value); }
 function applyFreq() {
   const raw = parseFloat($('freqEntry').value.replace(',', '.'));
   if (!Number.isFinite(raw) || raw <= 0 || raw > 1300) { toast('Bad frequency'); return; }
-  const freq10 = Math.round(raw * 100000); // MHz -> 10 Hz units
-  rpc('setFrequency', bandOfTuneSelect(), freq10);
+  const freqHz = Math.round(raw * 1e6); // MHz -> Hz
+  rpc('setFrequency', bandOfTuneSelect(), freqHz);
 }
 
 async function connect() {

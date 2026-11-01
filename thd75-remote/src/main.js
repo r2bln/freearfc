@@ -71,9 +71,8 @@ async function doConnect({ path: portPath }) {
   });
   conn.on('state', (state) => send('thd75:state', state));
   conn.on('log', (direction, frame) => send('thd75:log', { direction, frame, t: Date.now() }));
-  conn.on('reject', () => send('thd75:rejected'));
   conn.on('close', () => { stopPolling(); send('thd75:closed'); });
-  conn.on('warning', (msg) => send('thd75:warning', msg));
+  conn.on('warning', (msg) => { if (!msg.startsWith('spurious')) send('thd75:warning', msg); });
 
   await conn.enterControlMode();
   const identity = await conn.getId();

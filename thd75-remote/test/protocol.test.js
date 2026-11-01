@@ -50,7 +50,7 @@ test('FQ response updates band frequency (10 Hz units)', async () => {
   await sleep(10);
   t.rx('FQ 0,0145000000\r');
   await p;
-  assert.strictEqual(c.state.aBand.frequency10Hz, 145000000); // 145.000 MHz
+  assert.strictEqual(c.state.aBand.frequencyHz, 145000000); // 145.000 MHz in Hz
   assert.strictEqual(c.state.subBand, false);
 });
 
@@ -62,7 +62,7 @@ test('setFrequency wire format matches original (D10, band,payload)', async () =
   assert.strictEqual(t.written[0], 'FQ 1,0430000000\r');
   t.rx('FQ 1,0430000000\r');
   await p;
-  assert.strictEqual(c.state.bBand.frequency10Hz, 430000000);
+  assert.strictEqual(c.state.bBand.frequencyHz, 430000000);
 });
 
 test('setStep encodes Hz value as uppercase hex', async () => {
