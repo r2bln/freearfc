@@ -49,7 +49,16 @@ license forbids redistributing.
 ## Requirements
 
 - Linux (the UI itself is portable; the audio monitor is Linux-only)
-- Node.js ≥ 20 and npm
+- **Node.js 22 LTS** — pinned in [`.nvmrc`](.nvmrc). If you don't have
+  it, the easiest way is [nvm](https://github.com/nvm-sh/nvm):
+
+  ```bash
+  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+  # restart the shell, then in the repo root:
+  nvm install 22     # or just: nvm use
+  ```
+
+  (Developed and verified on Node 22 LTS and v27 with npm 12.)
 - Serial port access: your user in the `uucp` group
   (`sudo usermod -aG uucp "$USER"`, re-login) or, quick and dirty,
   `sudo chmod 666 /dev/ttyACM0`
@@ -59,7 +68,9 @@ license forbids redistributing.
 
 ```bash
 git clone git@github.com:r2bln/freearfc.git
-cd freearfc/thd75-remote
+cd freearfc
+nvm use                # Node 22 per .nvmrc (if you use nvm)
+cd thd75-remote
 npm install
 ```
 
