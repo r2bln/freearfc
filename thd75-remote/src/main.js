@@ -41,7 +41,7 @@ function startPolling() {
     conn.pollSMeter(1).catch(() => {});
     conn.request('BY', ' 0', { wait: false }).catch(() => {});
     conn.request('BY', ' 1', { wait: false }).catch(() => {});
-  }, 1000);
+  }, 2000);
 }
 
 async function doConnect({ path: portPath }) {

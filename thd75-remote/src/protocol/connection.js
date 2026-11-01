@@ -14,13 +14,20 @@ const {
 
 const { EventEmitter } = require('events');
 
+/** Delay before poking the radio with a bare CR to flush a queued reply. */
+const WAKE_DELAY_MS = 80;
+
 /** Command table: wire command -> { parse(payload) -> patch, event } */
 const PARSERS = {
   FQ: (p) => ({ band: +p[0], frequency10Hz: Number.parseInt(p.substr(2, 10), 10) }),
   MD: (p) => ({ band: +p[0], mode: +p[2] }),
   VM: (p) => ({ band: +p[0], vfoMode: +p[2] }),
   RA: (p) => ({ band: +p[0], attenuator: +p[2] }),
-  SF: (p) => ({ band: +p[0], stepHz: Number.parseInt(p.substr(2), 10) }),
+  SF: (p) => {
+    // Radio answers with the step INDEX, not the Hz value (live-verified).
+    const idx = Number.parseInt(p.substr(2), 10);
+    return { band: +p[0], stepIdx: idx, stepHz: STEPS_HZ[idx] };
+  },
   SH: (p) => ({ filter: +p[0], filterLevel: +p[2] }),
   SM: (p) => ({ band: +p[0], sMeter: +p[2] }),
   BY: (p) => ({ band: +p[0], busy: +p[2] === 1 }),
@@ -54,6 +61,9 @@ class THD75Connection extends EventEmitter {
     this.queue = [];
     this.state = freshState();
     this.log = [];
+    // Radio answers the raw handshake frames with delayed '?' frames; the
+    // original client never waits for them. Drop '?' while settling.
+    this.rejectGraceUntil = 0;
 
     transport.on('data', (buf) => this._onData(buf));
     transport.on('close', () => this._onClose());
@@ -78,8 +88,14 @@ class THD75Connection extends EventEmitter {
   _onFrame(frame) {
     this._pushLog('rx', frame);
     if (frame === '?') {
-      const waiter = this._takePending(null);
-      if (waiter) waiter.reject(new Error(`Radio rejected command ${waiter.cmd}`));
+      if (Date.now() < this.rejectGraceUntil) {
+        this.emit('warning', 'spurious ? (settling after handshake)');
+        return;
+      }
+      // Live-verified: the radio answers raw/empty frames with '?' and
+      // delivers queued replies batched with the NEXT request, so a lone
+      // '?' is not attributable to a specific pending command. The
+      // original client also only uses it as a wake-up signal.
       this.emit('reject');
       return;
     }
@@ -121,6 +137,7 @@ class THD75Connection extends EventEmitter {
     if (i === -1) return null;
     const [w] = this.pending.splice(i, 1);
     clearTimeout(w.timer);
+    if (w.wakeTimer) clearTimeout(w.wakeTimer);
     return w;
   }
 
@@ -176,6 +193,11 @@ class THD75Connection extends EventEmitter {
           job.reject(new Error(`Timeout waiting for ${job.cmd}`));
         }, job.timeout);
         this.pending.push(job);
+        // Live-verified: the radio processes its RX queue only when another
+        // byte arrives, so poke it with a bare CR to flush the reply.
+        job.wakeTimer = setTimeout(() => {
+          if (this.pending.includes(job)) this.wake();
+        }, WAKE_DELAY_MS);
       } else {
         job.resolve(null);
       }
@@ -183,14 +205,22 @@ class THD75Connection extends EventEmitter {
       .finally(next);
   }
 
+  /** Send a single CR to make the radio emit queued replies. */
+  wake() {
+    this._pushLog('tx', '(wake)');
+    this.transport.write(CR);
+  }
+
   // ------------------------------------------------------------- handshake
 
-  /** Enter transceiver-control mode; mirrors a/u.r(). */
+  /** Enter transceiver-control mode; mirrors a/u.r(). Delayed '?' replies
+   *  to these raw frames are dropped for a grace period afterwards. */
   async enterControlMode() {
     for (const line of ENTER_CONTROL_SEQUENCE) {
       await this._send(line);
       await sleep(60);
     }
+    this.rejectGraceUntil = Date.now() + 1200;
   }
 
   /**
@@ -276,7 +306,8 @@ class THD75Connection extends EventEmitter {
   setIoMode(mode) { return this.request('IO', ` ${mode}`); }
   getIoMode() { return this.request('IO'); }
 
-  setVolume(levelIdx) { return this.request('AG', ` ${String(levelIdx).padStart(3, '0')}`, { wait: false }); }
+  /** AF gain level as 3 digits (live radio reported 006; range not clamped). */
+  setVolume(level) { return this.request('AG', ` ${String(level).padStart(3, '0')}`, { wait: false }); }
   getVolume() { return this.request('AG'); }
 
   setGps(on, pcOutput) { return this.request('GP', ` ${on ? 1 : 0},${pcOutput ? 1 : 0}`, { wait: false }); }
@@ -344,6 +375,7 @@ function bandState() {
     mode: 0,
     vfoMode: 0,
     attenuator: 0,
+    stepIdx: 0,
     stepHz: 0,
     sMeter: 0,
     busy: false,

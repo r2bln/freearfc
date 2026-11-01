@@ -83,13 +83,25 @@ test('SM response updates s-meter and busy', async () => {
   assert.strictEqual(c.state.bBand.sMeter, 7);
 });
 
-test('? rejects the pending request', async () => {
+test('? does not reject the waiter (radio answers raw frames with ?)', async () => {
   const t = new MockTransport();
   const c = new THD75Connection(t);
-  const p = c.request('MD', ' 9');
+  const p = c.request('MD', ' 9', { timeout: 40 });
   await sleep(10);
   t.rx('?\r');
-  await assert.rejects(p, /rejected/);
+  await assert.rejects(p, /Timeout/); // survives '?' and still times out
+});
+
+test('wake byte is sent when a waiter is still pending', async () => {
+  const t = new MockTransport();
+  const c = new THD75Connection(t);
+  const p = c.request('ID', '', { timeout: 2000 });
+  await sleep(10);
+  t.written.length = 0;
+  await sleep(120); // > WAKE_DELAY_MS
+  assert.ok(t.written.includes('\r'), 'bare CR wake expected');
+  t.rx('ID TH-D75\r');
+  assert.strictEqual(await p, 'TH-D75');
 });
 
 test('timeout rejects waiter', async () => {

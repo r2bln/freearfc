@@ -78,7 +78,7 @@ function reflect(state) {
       $('mode' + band).value = String(b.mode);
       $('busy' + band).classList.toggle('on', !!b.busy);
       $('att' + band).checked = !!b.attenuator;
-      const idx = STEPS_HZ.indexOf(b.stepHz);
+      const idx = b.stepIdx !== undefined ? b.stepIdx : STEPS_HZ.indexOf(b.stepHz);
       $('step' + band).value = String(idx === -1 ? 0 : idx);
       $('sm' + band).style.width = Math.min(100, (b.sMeter / 9) * 100) + '%';
     }
@@ -168,14 +168,10 @@ function wire() {
   }
 
   $('ioMode').onchange = () => { if (!applyingUi) rpc('setIoMode', Number($('ioMode').value)); };
-  $('volUp').onclick = () => rpc('getVolume').then((v) => {
-    const lvl = Math.min(3, Number(v) + 1);
-    rpc('setVolume', lvl);
-  });
-  $('volDown').onclick = () => rpc('getVolume').then((v) => {
-    const lvl = Math.max(0, Number(v) - 1);
-    rpc('setVolume', lvl);
-  });
+  let lastVol = 0;
+  window.thd75.onState((s) => { lastVol = s.audioGain; });
+  $('volUp').onclick = () => rpc('setVolume', lastVol + 1);
+  $('volDown').onclick = () => rpc('setVolume', Math.max(0, lastVol - 1));
   $('gpsOn').onchange = () => { if (!applyingUi) rpc('setGps', $('gpsOn').checked ? 1 : 0, $('gpsPc').checked ? 1 : 0); };
   $('gpsPc').onchange = () => { if (!applyingUi) rpc('setGps', $('gpsOn').checked ? 1 : 0, $('gpsPc').checked ? 1 : 0); };
   $('tncOn').onchange = () => { if (!applyingUi) rpc('setTnc', $('tncOn').checked ? 1 : 0, 1); };

@@ -7,7 +7,8 @@ const { THD75Connection } = require('./src/protocol/connection');
 
 const PATH = process.argv[2] || '/dev/ttyACM0';
 
-const log = (d, f) => console.log((d === 'tx' ? '» ' : '« ') + JSON.stringify(f));
+const T0 = Date.now();
+const log = (d, f) => console.log(`+${((Date.now() - T0) / 1000).toFixed(2)}s ${d === 'tx' ? '»' : '«'} ${JSON.stringify(f)}`);
 
 async function main() {
   const port = new SerialPort({
@@ -28,12 +29,13 @@ async function main() {
 
   console.log('--- enter control mode ---');
   await conn.enterControlMode();
-  await t(400);
+  console.log('--- settling 3s ---');
+  await t(3000);
 
   console.log('--- identity ---');
   for (const [cmd, params] of [['ID', ''], ['TY', ''], ['FV', ''], ['PS', ''], ['GW', '']]) {
     try {
-      const p = await conn.request(cmd, params, { timeout: 1500 });
+      const p = await conn.request(cmd, params, { timeout: 3000 });
       console.log(`${cmd} -> ${JSON.stringify(p)}`);
     } catch (e) {
       console.log(`${cmd} -> ERROR ${e.message}`);
@@ -46,7 +48,7 @@ async function main() {
                      'RA 0', 'RA 1', 'AG', 'FS', 'FT', 'IO', 'TN', 'GP', 'DL', 'BC', 'BY 0', 'BY 1', 'SM 0', 'SM 1']) {
     const [c, ...rest] = cmd.split(' ');
     try {
-      const p = await conn.request(c, rest.length ? ' ' + rest.join(' ') : '', { timeout: 1200 });
+      const p = await conn.request(c, rest.length ? ' ' + rest.join(' ') : '', { timeout: 3000 });
       console.log(`${cmd.padEnd(5)} -> ${JSON.stringify(p)}`);
     } catch (e) {
       console.log(`${cmd.padEnd(5)} -> ERROR ${e.message}`);

@@ -3,11 +3,10 @@
 Reverse-engineered from **ARFC-D75 1.0.8717.20672** (JVCKENWOOD, setup.exe
 MD5 `7072584d3dabb58a71ecc061486e7933`, `arfc_d75.exe` SHA-256
 `9de828cb22884ea0d716b88fe9f90ccd91848103b625dcf4f922bee82d858405`).
-Everything below is source-derived from the decompiled .NET code
-(`~/sources/freearfc/decomp/`); nothing has been verified against a live
-radio yet. Confidence: high for formats (exact format strings), medium for
-response shapes (parser code), low for timings that ILSpy obfuscation may
-have shuffled.
+Sources: decompiled .NET code (`decomp/`) + **live verification against a
+real TH-D75 (fw 1.03, region J) on 2026-11-01**: every command in the
+reference table below was executed read-only and answered as documented.
+Confidence: high (wire-verified) unless noted.
 
 ## Physical layer
 
@@ -21,6 +20,18 @@ have shuffled.
 | Frame terminator | CR (`0x0D`), both directions |
 | Inter-command gap | ≥ 5 ms |
 | Response timeout | 3000 ms |
+
+### Quirk: batched replies (live-verified, critical)
+
+The virtual COM board only processes its RX queue **when another byte
+arrives**. A lone request sits unanswered until either the next request or
+an internal ~3 s timer fires; when woken, the radio first flushes all
+queued replies (FIFO), then answers the new frame. Practical consequence:
+after sending a request, poke the port with a single bare `\r` (≈80 ms
+later) — the reply (and a trailing `?` answering the poke) arrives
+immediately. The `?` frames answering raw/empty handshake frames also
+arrive batched and late, so a lone `?` must never be attributed to a
+specific pending command.
 | RX buffer flush | 4096 B read buffer, 2048 B write buffer |
 
 ## Frame format
@@ -70,7 +81,7 @@ not the human value.
 |---|---|---|---|---|
 | `ID` | — | `ID` | model string | Radio identity |
 | `FV` | — | `FV` | firmware string | Firmware version |
-| `TY` | — | `TY` | first char: `J`/`E`/`K`/`M` | Destination region |
+| `TY` | — | `TY` | `X,n` — first char: `J`/`E`/`K`/`M` region (live: `J,0`) |
 | `PS` | — | `PS` | `0..5` | Power status |
 | `GW` | — | `GW` | `0..2` | DV gateway mode (must be 0 to connect) |
 | `AI` | `AI 0\|1` | `AI` | `0\|1` | Auto-information on/off; async frames follow changes |
@@ -80,10 +91,10 @@ not the human value.
 | `DW` | `DW nnn` | — | — | Frequency −N steps, same encoding |
 | `MD` | `MD b,m` | `MD b` | `b,m` | Mode, m = 0 FM, 1 NFM, 2 WFM, 3 AM, 4 LSB, 5 USB, 6 CW, 9 DV |
 | `VM` | `VM b,v` | `VM b` | `b,v` | VFO mode v = 0 VFO, 1 Memory, 2 Call, 3 Weather |
-| `SF` | `SF b,XXXX` | `SF b` | `b,sssss` | Step: set = Hz value as **UPPERCASE HEX** (5 kHz → `1388`); response = Hz as decimal. Values: 5000,6250,8330,9000,10000,12500,15000,20000,25000,30000,50000,100000 |
+| `SF` | `SF b,XXXX` | `SF b` | `b,s` | Step: set = Hz value as **UPPERCASE HEX** (5 kHz → `1388`); response `s` = **step index** `0..11` (live-verified: `SF 1` → `SF 1,1`). Values: 5000,6250,8330,9000,10000,12500,15000,20000,25000,30000,50000,100000 |
 | `FS` | `FS i` | `FS` | `i` | Fine step idx: 0→20 Hz, 1→100, 2→500, 3→1000 |
 | `FT` | `FT 0\|1` | `FT` | `0\|1` | Fine tuning on/off |
-| `AG` | `AG nnn` | `AG` | `nnn` | AF gain idx `000..003` (coarse volume over IF output) |
+| `AG` | `AG nnn` | `AG` | `nnn` | AF gain level, 3 digits (live: `006`); range not clamped |
 | `IO` | `IO i` | `IO` | `i` | USB output: 0 AF, 1 IF, 2 Detect |
 | `RA` | `RA b,0\|1` | `RA b` | `b,0\|1` | Attenuator |
 | `BC` | `BC b,0\|1` | `BC` | `b,0\|1` | Beat cancel |
@@ -103,8 +114,10 @@ unmatched frames are ignored.
 
 ## Error handling
 
-- `?` frame — the radio rejected the last request (original drops the
-  waiter and surfaces a failure).
+- `?` frame — answer to an invalid/raw frame (each of the handshake
+  probes gets one, batched and delayed). Do not map it to a specific
+  pending request; genuine command rejections are not yet observed
+  live (presumably also `?`, resolved by timeout).
 - ReadTimeout is 1000 ms at the SerialPort level; logical wait is 3000 ms.
 - Original surfaces "Cannot connect" when the port is a KISS TNC
   (radio in KISS mode), absent, or occupied.
