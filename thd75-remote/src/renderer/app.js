@@ -175,8 +175,10 @@ function bindWheel(card, band) {
 }
 
 function applyFreq(band) {
+  // band: 0 = A, 1 = B (wire); the entry field is suffixed with the letter.
+  const key = 'AB'[band];
   // Accept both ',' and '.' as the decimal separator.
-  const raw = $('freqEntry' + band).value.replace(/,/g, '.');
+  const raw = $('freqEntry' + key).value.replace(/,/g, '.');
   const mhz = parseFloat(raw);
   if (!Number.isFinite(mhz) || mhz <= 0 || mhz > 1300) { toast('Bad frequency'); return; }
   const freqHz = Math.round(mhz * 1e6); // MHz -> Hz
