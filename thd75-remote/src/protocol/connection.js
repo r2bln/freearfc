@@ -51,6 +51,10 @@ const PARSERS = {
   TY: (p) => ({ region: p[0], regionName: REGIONS[p[0]] || 'Unknown' }),
   GW: (p) => ({ dvGateway: +p }),
   AI: (p) => ({ aiInformation: +p }),
+  // PTT confirmations (hamlib thd74 semantics: bare TX keys up, RX unkeys;
+  // the echo carries the current TX band).
+  TX: (p) => ({ transmitting: true, txBand: Number.parseInt(p, 10) }),
+  RX: () => ({ transmitting: false }),
 };
 
 const BAND_KEY = (b) => (b === BAND.A ? 'aBand' : 'bBand');
@@ -356,9 +360,19 @@ class THD75Connection extends EventEmitter {
     ]).catch(() => {});
   }
 
-  /** VOX: the only CAT-reachable transmit trigger (no PTT command exists). */
+  /** VOX (menu 150): voice-activated transmit on the radio's own mic. */
   setVox(on) { return this.request('VX', ` ${on ? 1 : 0}`); }
   getVox() { return this.request('VX'); }
+
+  /**
+   * PTT (live-verified, hamlib thd74 semantics): a bare TX keys the radio
+   * up on its current TX band; the echo "TX b" confirms and names the band.
+   * A parameterized "TX n" is invalid (the radio answers '?'). Outside the
+   * region's TX windows the key-up is refused (JP unit: 2 m / 70 cm only).
+   */
+  keyPtt() { return this.request('TX', ''); }
+  /** PTT off; confirmed by an "RX" echo. */
+  unkeyPtt() { return this.request('RX', ''); }
 
   _pushLog(direction, frame) {
     this.log.push({ t: Date.now(), direction, frame });
@@ -386,6 +400,8 @@ function freshState() {
     gps: false,
     gpsPcOutput: false,
     vox: false,
+    transmitting: false,
+    txBand: null,
     batteryLevel: null,
     batteryStatus: null,
     batteryType: null,

@@ -103,6 +103,10 @@ function reflect(state) {
     $('tncOn').checked = state.tncMode !== 0;
     $('singleBand').checked = state.singleBand !== 0;
     $('voxOn').checked = !!state.vox;
+    $('txLed').classList.toggle('on', !!state.transmitting);
+    $('txBandInfo').textContent = state.transmitting
+      ? 'TX on band ' + 'AB'[state.txBand ?? 0]
+      : '';
     $('fineTune').checked = !!state.fine;
     $('fineStep').value = String(state.fineStep);
   } finally {
@@ -317,6 +321,27 @@ function wire() {
     btn.disabled = false;
     refreshAudio();
   };
+
+  // PTT: hold the button to transmit; any release unkeys immediately.
+  {
+    const btn = $('pttBtn');
+    let keyed = false;
+    const up = () => {
+      if (!keyed) return;
+      keyed = false;
+      btn.classList.remove('keyed');
+      rpc('unkeyPtt').catch(() => {});
+    };
+    btn.addEventListener('mousedown', () => {
+      if (!connected || keyed) return;
+      keyed = true;
+      btn.classList.add('keyed');
+      rpc('keyPtt').catch(() => { keyed = false; btn.classList.remove('keyed'); });
+    });
+    btn.addEventListener('mouseup', up);
+    btn.addEventListener('mouseleave', up);
+    window.addEventListener('blur', up);
+  }
 
   for (const btn of document.querySelectorAll('button.step')) {
     btn.onclick = () => {

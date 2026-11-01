@@ -110,7 +110,7 @@ const RPC = new Set([
   'setSingleBand', 'getSingleBand', 'setBeatCancel', 'getBeatCancel',
   'setAttenuator', 'getAttenuator', 'setVfoMode', 'getVfoMode',
   'setFmRadio', 'getFmRadio', 'setAi', 'pollSMeter', 'pollPower', 'pollBattery', 'syncAll',
-  'setVox', 'getVox',
+  'setVox', 'getVox', 'keyPtt', 'unkeyPtt',
 ]);
 
 ipcMain.handle('ports:list', () => SerialPort.list());

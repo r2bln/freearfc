@@ -76,8 +76,7 @@
   </div>
 
   <div class="tune card">
-    <div class="card-title">VFO</div>
-    <div class="row">
+    <div class="card-title">VFO</div>    <div class="row">
       <label>Band</label>
       <select id="tuneBand"><option value="0">A</option><option value="1" selected>B</option></select>
       <label>Freq&nbsp;(MHz)</label>
@@ -128,6 +127,12 @@
       <label>Monitor&rarr;speakers</label>
       <button id="audioToggle" title="Loopback the radio USB-audio (AF/IF/Detect, per USB out) to the default output">Off</button>
       <span class="tiny" id="audioInfo"></span>
+    </div>
+    <div class="row">
+      <label>PTT</label>
+      <button id="pttBtn" class="ptt" title="Hold to transmit on the radio's TX band (bare TX; JP unit: 2 m / 70 cm only)">HOLD&nbsp;TO&nbsp;TX</button>
+      <span class="led" id="txLed" title="Transmitting"></span>
+      <span class="tiny" id="txBandInfo"></span>
     </div>
   </div>
 

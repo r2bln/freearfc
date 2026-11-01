@@ -184,3 +184,21 @@ test('battery and VOX frames patch the state', async () => {
   await pv;
   assert.strictEqual(c.state.vox, false);
 });
+
+test('PTT frames and command wire format', async () => {
+  const t = new MockTransport();
+  const c = new THD75Connection(t);
+  const pk = c.keyPtt();
+  await sleep(10);
+  assert.strictEqual(t.written.includes('TX\r'), true);
+  t.rx('TX 1\r');
+  assert.strictEqual(await pk, '1');
+  assert.strictEqual(c.state.transmitting, true);
+  assert.strictEqual(c.state.txBand, 1);
+  const pu = c.unkeyPtt();
+  await sleep(10);
+  assert.strictEqual(t.written.includes('RX\r'), true);
+  t.rx('RX\r');
+  await pu;
+  assert.strictEqual(c.state.transmitting, false);
+});

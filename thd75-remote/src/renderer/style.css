@@ -144,3 +144,11 @@ main {
 }
 .ch-mode { padding: 4px 6px; }
 .ch-del { min-width: 34px; padding: 4px 8px; color: var(--bad); }
+
+.ptt {
+  background: #3a2020; border-color: #6e3030; color: #e8a0a0;
+  font-weight: 700; letter-spacing: 1px; user-select: none;
+}
+.ptt:not(:disabled):active, .ptt.keyed {
+  background: var(--bad); border-color: var(--bad); color: white;
+}
