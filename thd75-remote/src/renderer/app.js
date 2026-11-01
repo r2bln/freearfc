@@ -75,7 +75,8 @@ function reflect(state) {
 
     for (const [band, key] of [['A', 'aBand'], ['B', 'bBand']]) {
       const b = state[key];
-      $('freq' + band).textContent = fmtMHz(b.frequency10Hz) + ' MHz';
+      $('freq' + band).textContent = fmtMHz(b.frequencyHz) + ' MHz';
+      $('vm' + band).textContent = ['VFO', 'Memory', 'Call', 'Weather'][b.vfoMode] || 'VM' + b.vfoMode;
       $('mode' + band).value = String(b.mode);
       $('busy' + band).classList.toggle('on', !!b.busy);
       $('att' + band).checked = !!b.attenuator;
