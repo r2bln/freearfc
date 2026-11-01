@@ -6,7 +6,6 @@ const $ = (id) => document.getElementById(id);
 let connected = false;
 let lastState = null;
 let applyingUi = false; // suppress change handlers while reflecting radio state
-let activeBand = 0;     // highlighted band card
 
 function fmtMHz(freqHz) {
   if (!freqHz) return '---.-----';
@@ -39,7 +38,6 @@ function initControls() {
   fillSelect($('modeB'), MODE, (m) => m || '(reserved)');
   fillSelect($('stepA'), STEPS_HZ, (hz) => (hz / 1000) + ' kHz');
   fillSelect($('stepB'), STEPS_HZ, (hz) => (hz / 1000) + ' kHz');
-  fillSelect($('fineStep'), FINE_STEPS_HZ, (hz) => hz + ' Hz');
   fillSelect($('multA'), TUNE_STEPS, (n) => '×' + n);
   fillSelect($('multB'), TUNE_STEPS, (n) => '×' + n);
 }
@@ -86,12 +84,10 @@ function reflect(state) {
       const vm = $('vm' + band);
       vm.textContent = ['VFO', 'Mem', 'Call', 'Wx'][b.vfoMode] || 'VM' + b.vfoMode;
       vm.classList.toggle('active', b.vfoMode !== 0);
-      // Tuning controls only work in VFO mode: FQ/UP sets are refused (N) otherwise.
+      // Tuning buttons only work in VFO mode: FQ/UP sets are refused (N) otherwise.
       const vfo = b.vfoMode === 0;
       $('dn' + band).disabled = !vfo;
       $('up' + band).disabled = !vfo;
-      $('freqEntry' + band).disabled = !vfo;
-      $('applyFreq' + band).disabled = !vfo;
       $('mode' + band).value = String(b.mode);
       $('busy' + band).classList.toggle('on', !!b.busy);
       $('att' + band).checked = !!b.attenuator;
@@ -107,23 +103,13 @@ function reflect(state) {
     $('gpsPc').checked = !!state.gpsPcOutput;
     $('tncOn').checked = state.tncMode !== 0;
     $('voxOn').checked = !!state.vox;
-    $('fineTune').checked = !!state.fine;
-    $('fineStep').value = String(state.fineStep);
     $('txLed').classList.toggle('on', !!state.transmitting);
-    $('txBandInfo').textContent = state.transmitting
-      ? 'TX on band ' + 'AB'[state.txBand ?? 0]
-      : '';
+    $('txBandInfo').textContent = 'TX band ' + 'AB'[state.txBand ?? 0];
+    // The card outline follows the radio's TX band (set by PTT echo), not a UI choice.
+    $('bandA').classList.toggle('active-band', state.txBand === 0);
+    $('bandB').classList.toggle('active-band', state.txBand === 1);
   } finally {
     applyingUi = false;
-  }
-}
-
-function reflectActiveBand() {
-  for (const [band, b] of [['A', 0], ['B', 1]]) {
-    $('band' + band).classList.toggle('active-band', b === activeBand);
-  }
-  for (const btn of $('activeBandSeg').querySelectorAll('.segbtn')) {
-    btn.classList.toggle('on', Number(btn.dataset.b) === activeBand);
   }
 }
 
@@ -189,10 +175,44 @@ function bindWheel(card, band) {
 }
 
 function applyFreq(band) {
-  const raw = parseFloat($('freqEntry' + band).value.replace(',', '.'));
-  if (!Number.isFinite(raw) || raw <= 0 || raw > 1300) { toast('Bad frequency'); return; }
-  const freqHz = Math.round(raw * 1e6); // MHz -> Hz
-  rpc('setFrequency', band, freqHz);
+  // Accept both ',' and '.' as the decimal separator.
+  const raw = $('freqEntry' + band).value.replace(/,/g, '.');
+  const mhz = parseFloat(raw);
+  if (!Number.isFinite(mhz) || mhz <= 0 || mhz > 1300) { toast('Bad frequency'); return; }
+  const freqHz = Math.round(mhz * 1e6); // MHz -> Hz
+  const b = lastState && (band === 0 ? lastState.aBand : lastState.bBand);
+  // FQ sets only apply in VFO mode — switch automatically instead of failing.
+  (b && b.vfoMode !== 0 ? rpc('setVfoMode', band, 0) : Promise.resolve())
+    .then(() => rpc('setFrequency', band, freqHz))
+    .catch(() => {});
+}
+
+/** Emulate the radio's A/B key: exchange the two bands' VFO contents.
+ *  SETs are paced (live-verified): the firmware drops rapid-fire SET
+ *  bursts, and FQ targets outside the receiving band's range are
+ *  silently ignored, so cross-range swaps apply only the legal half. */
+async function swapBands() {
+  if (!connected || !lastState) return;
+  const P = 200;
+  const pace = (p) => p.then((r) => new Promise((res) => setTimeout(() => res(r), P)));
+  appLog('swap A/B');
+  try {
+    const vmA = lastState.aBand.vfoMode;
+    const vmB = lastState.bBand.vfoMode;
+    if (vmA !== 0) await pace(rpc('setVfoMode', 0, 0));
+    if (vmB !== 0) await pace(rpc('setVfoMode', 1, 0));
+    if (vmA !== 0 || vmB !== 0) await new Promise((r) => setTimeout(r, 500)); // let AI FQ/MD/SF land
+    const a = lastState.aBand;
+    const b = lastState.bBand;
+    await pace(rpc('setFrequency', 0, b.frequencyHz));
+    await pace(rpc('setMode', 0, b.mode));
+    await pace(rpc('setStep', 0, b.stepIdx));
+    await pace(rpc('setFrequency', 1, a.frequencyHz));
+    await pace(rpc('setMode', 1, a.mode));
+    await pace(rpc('setStep', 1, a.stepIdx));
+    if (vmB !== 0) await pace(rpc('setVfoMode', 1, vmB));
+    if (vmA !== 0) await pace(rpc('setVfoMode', 0, vmA));
+  } catch { /* toast already shown by rpc */ }
 }
 
 async function connect() {
@@ -361,6 +381,11 @@ function wire() {
     bindRepeat($('dn' + band), () => nudge(b, -1));
     bindRepeat($('up' + band), () => nudge(b, +1));
     bindWheel($('band' + band), b);
+    // Click on a card's empty space swaps the bands, like the radio's A/B key.
+    $('band' + band).addEventListener('click', (e) => {
+      if (e.target.closest('input, select, button, .vm, .knob, .led, .smeter')) return;
+      swapBands();
+    });
     $('vm' + band).onclick = () => {
       if (applyingUi || !connected) return;
       const cur = (band === 'A' ? lastState.aBand : lastState.bBand).vfoMode;
@@ -369,11 +394,6 @@ function wire() {
     $('mode' + band).onchange = () => { if (!applyingUi) rpc('setMode', b, Number($('mode' + band).value)); };
     $('step' + band).onchange = () => { if (!applyingUi) rpc('setStep', b, Number($('step' + band).value)); };
     $('att' + band).onchange = () => { if (!applyingUi) rpc('setAttenuator', b, $('att' + band).checked ? 1 : 0); };
-  }
-
-  // Active band segment (UI highlight)
-  for (const btn of $('activeBandSeg').querySelectorAll('.segbtn')) {
-    btn.onclick = () => { activeBand = Number(btn.dataset.b); reflectActiveBand(); };
   }
 
   // Volume: slider, number field, and wheel over both
@@ -392,8 +412,6 @@ function wire() {
   $('gpsPc').onchange = () => { if (!applyingUi) rpc('setGps', $('gpsOn').checked ? 1 : 0, $('gpsPc').checked ? 1 : 0); };
   $('tncOn').onchange = () => { if (!applyingUi) rpc('setTnc', $('tncOn').checked ? 1 : 0, 1); };
   $('voxOn').onchange = () => { if (!applyingUi) rpc('setVox', $('voxOn').checked); };
-  $('fineTune').onchange = () => { if (!applyingUi) rpc('setFine', $('fineTune').checked); };
-  $('fineStep').onchange = () => { if (!applyingUi) rpc('setFineStep', Number($('fineStep').value)); };
 
   // Local memory
   $('addChA').onclick = () => addChan(0);
@@ -484,6 +502,5 @@ function wire() {
 
 initControls();
 wire();
-reflectActiveBand();
 refreshPorts().catch((e) => toast(e.message));
 appLog('TH-D75 Remote started');

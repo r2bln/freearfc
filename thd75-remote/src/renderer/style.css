@@ -153,7 +153,7 @@ main {
 }
 
 /* ---- wide blocks (anything not per-band spans the full width) ---- */
-.vfo, .radio, .channels, .log { grid-column: 1 / -1; }
+.radio, .channels, .log { grid-column: 1 / -1; }
 .pttrow {
   grid-column: 1 / -1;
   display: flex; align-items: center; gap: 12px;

@@ -166,6 +166,15 @@ unmatched frames are ignored.
 - In single-band mode (`DL 1`, set/echo live-verified) SETs targeting the
   inactive band are refused with `N` — e.g. `VM 0,n` while only band B is
   active. `DL 0` re-enables both bands.
+- **SET bursts need pacing.** The firmware drops rapid-fire SET frames
+  (live: a 6-set swap executed back-to-back applied only the first).
+  ~200 ms between SETs is reliable. Refusals are `N` single frames, but
+  an `FQ` set aimed outside the target band's RX range is **silently
+  ignored** (live: 145.525 on band B did nothing, 70 cm on band A worked;
+  cross-range A/B swaps therefore apply only the legal half).
+- `FT` (fine tuning) set is refused with `N` in every mode probed
+  (FM with any `FS`, LSB); the GET answers `FT 0`. Fine on/off appears
+  not to be CAT-settable on fw 1.03 — `FS` (fine step) sets work fine.
 
 ## Error handling
 
