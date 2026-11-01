@@ -119,3 +119,28 @@ main {
 
 .vm { font-weight: 600; color: var(--dim); cursor: pointer; padding: 0 6px; }
 .vm:hover { color: var(--accent); }
+.vm.active { color: var(--accent); }
+
+.tunebar { justify-content: flex-start; margin: 2px 0 6px; }
+.knob {
+  min-width: 52px; padding: 8px 12px; font-size: 15px; font-weight: 700;
+  border-radius: 8px; user-select: none;
+}
+.knob:disabled { opacity: 0.35; cursor: default; }
+.knob:not(:disabled):active { border-color: var(--accent); color: var(--accent); }
+.mult { padding: 8px 6px; }
+
+.channels { grid-column: 1 / -1; }
+.chan-list { display: flex; flex-direction: column; gap: 4px; max-height: 180px; overflow-y: auto; }
+.chan-row { display: flex; align-items: center; gap: 8px; }
+.chan-row .ch-name {
+  flex: 1 1 160px; min-width: 120px; padding: 4px 8px;
+  background: transparent; border-color: transparent;
+}
+.chan-row .ch-name:hover, .chan-row .ch-name:focus { border-color: var(--edge); }
+.ch-freq {
+  font-family: "Noto Sans Mono", monospace; min-width: 92px; text-align: right;
+  color: var(--accent);
+}
+.ch-mode { padding: 4px 6px; }
+.ch-del { min-width: 34px; padding: 4px 8px; color: var(--bad); }

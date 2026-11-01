@@ -121,10 +121,14 @@ unmatched frames are ignored.
   `MD`/`FQ`/`SF`/`VM` updates). The original client resolves the oldest
   waiter on ANY single-char frame; mirror that instead of waiting for a
   command echo.
-- An applied `FQ` set snaps the frequency to the current step grid
-  (e.g. 446.043750 with a 5 kHz step becomes 446.040000).
+- An applied `FQ` set is **absolute**: targets on the step grid are applied
+  exactly (live: 446.100/446.200/446.050 MHz applied as sent); off-grid
+  targets snap DOWN to the grid (446.123456 with a 5 kHz step → 446.120000).
+- An `SF` set is accepted or silently refused per mode: `SF 1,2` (8330 Hz)
+  was refused in VFO/FM (step stayed 5000); plain multiples applied fine.
 - VFO tuning (FQ/UP/DW/SF sets) only applies in VFO mode; switch with
-  `VM b,0|1` first.
+  `VM b,0|1` first. Switching VFO→Memory triggers an AI burst restoring the
+  channel's FQ/MD/SF/VM state (live: recall of 446.093750/CW/6250).
 
 ## Error handling
 

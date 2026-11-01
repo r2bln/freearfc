@@ -38,6 +38,8 @@ function initControls() {
   fillSelect($('stepA'), STEPS_HZ, (hz) => (hz / 1000) + ' kHz');
   fillSelect($('stepB'), STEPS_HZ, (hz) => (hz / 1000) + ' kHz');
   fillSelect($('fineStep'), FINE_STEPS_HZ, (hz) => hz + ' Hz');
+  fillSelect($('multA'), TUNE_STEPS, (n) => '×' + n);
+  fillSelect($('multB'), TUNE_STEPS, (n) => '×' + n);
 }
 
 // ---------------------------------------------------------------- ports
@@ -76,7 +78,13 @@ function reflect(state) {
     for (const [band, key] of [['A', 'aBand'], ['B', 'bBand']]) {
       const b = state[key];
       $('freq' + band).textContent = fmtMHz(b.frequencyHz) + ' MHz';
-      $('vm' + band).textContent = ['VFO', 'Memory', 'Call', 'Weather'][b.vfoMode] || 'VM' + b.vfoMode;
+      const vm = $('vm' + band);
+      vm.textContent = ['VFO', 'Mem', 'Call', 'Wx'][b.vfoMode] || 'VM' + b.vfoMode;
+      vm.classList.toggle('active', b.vfoMode !== 0);
+      // Tuning buttons only work in VFO mode: FQ/UP sets are refused (N) otherwise.
+      const vfo = b.vfoMode === 0;
+      $('dn' + band).disabled = !vfo;
+      $('up' + band).disabled = !vfo;
       $('mode' + band).value = String(b.mode);
       $('busy' + band).classList.toggle('on', !!b.busy);
       $('att' + band).checked = !!b.attenuator;
@@ -118,6 +126,125 @@ function applyFreq() {
   rpc('setFrequency', bandOfTuneSelect(), freqHz);
 }
 
+/**
+ * Tune a band by N×step via an explicit FQ set. UP/DW are not used here:
+ * they carry no band argument and act on the radio's main band only.
+ */
+function nudge(band, dir) {
+  if (!connected || !lastState) return;
+  const b = band === 0 ? lastState.aBand : lastState.bBand;
+  if (!b || b.vfoMode !== 0) { toast('Band ' + 'AB'[band] + ': switch to VFO first'); return; }
+  const mult = TUNE_STEPS[Number(band === 0 ? $('multA').value : $('multB').value)] || 1;
+  const stepHz = b.stepHz || 5000;
+  return rpc('setFrequency', band, b.frequencyHz + dir * mult * stepHz);
+}
+
+/** Fire fn on click and repeat while the button is held, serialized. */
+function bindRepeat(btn, fn) {
+  let timer = null;
+  let inFlight = false;
+  const fire = () => {
+    if (inFlight) return;
+    inFlight = true;
+    Promise.resolve(fn()).catch(() => {}).finally(() => { inFlight = false; });
+  };
+  const stop = () => { if (timer) { clearInterval(timer); timer = null; } };
+  btn.addEventListener('mousedown', () => {
+    if (btn.disabled) return;
+    fire();
+    stop();
+    timer = setInterval(fire, 220);
+  });
+  btn.addEventListener('mouseup', stop);
+  btn.addEventListener('mouseleave', stop);
+  window.addEventListener('blur', stop);
+}
+
+// ------------------------------------------------------------- pc channels
+
+const CH_KEY = 'thd75.channels';
+
+function loadChans() {
+  try { return JSON.parse(localStorage.getItem(CH_KEY)) || []; } catch { return []; }
+}
+function saveChans(chans) {
+  localStorage.setItem(CH_KEY, JSON.stringify(chans));
+  renderChans();
+}
+
+function addChan(band) {
+  const b = band === 0 ? lastState.aBand : lastState.bBand;
+  if (!b || !b.frequencyHz) { toast('No frequency to store yet'); return; }
+  const chans = loadChans();
+  chans.push({ name: fmtMHz(b.frequencyHz), freqHz: b.frequencyHz, mode: b.mode });
+  saveChans(chans);
+}
+
+/** Recall: force the target band to VFO, then apply mode and frequency. */
+function recallChan(i, band) {
+  const ch = loadChans()[i];
+  if (!ch) return;
+  rpc('setVfoMode', band, 0)
+    .then(() => rpc('setMode', band, Number(ch.mode) || 0))
+    .then(() => rpc('setFrequency', band, ch.freqHz))
+    .catch(() => {});
+}
+
+function renderChans() {
+  const host = $('chanList');
+  host.innerHTML = '';
+  const chans = loadChans();
+  if (!chans.length) {
+    const empty = document.createElement('div');
+    empty.className = 'tiny';
+    empty.textContent = '(empty — store the current band with “+ from A/B”)';
+    host.appendChild(empty);
+    return;
+  }
+  chans.forEach((ch, i) => {
+    const row = document.createElement('div');
+    row.className = 'chan-row';
+
+    const name = document.createElement('input');
+    name.type = 'text'; name.className = 'ch-name'; name.value = ch.name || '';
+    name.onchange = () => { const c = loadChans(); c[i].name = name.value; saveChans(c); };
+    row.appendChild(name);
+
+    const freq = document.createElement('span');
+    freq.className = 'ch-freq';
+    freq.textContent = (ch.freqHz / 1e6).toFixed(5);
+    row.appendChild(freq);
+
+    const mode = document.createElement('select');
+    mode.className = 'ch-mode';
+    MODE.forEach((m, mi) => {
+      const o = document.createElement('option');
+      o.value = String(mi); o.textContent = m || '(reserved)';
+      if (!m) o.disabled = true;
+      mode.appendChild(o);
+    });
+    mode.value = String(ch.mode || 0);
+    mode.onchange = () => { const c = loadChans(); c[i].mode = Number(mode.value); saveChans(c); };
+    row.appendChild(mode);
+
+    for (const [label, band] of [['\u2192A', 0], ['\u2192B', 1]]) {
+      const btn = document.createElement('button');
+      btn.textContent = label;
+      btn.title = 'Recall into band ' + 'AB'[band];
+      btn.onclick = () => recallChan(i, band);
+      row.appendChild(btn);
+    }
+
+    const del = document.createElement('button');
+    del.className = 'ch-del'; del.textContent = '\u00d7';
+    del.title = 'Delete channel';
+    del.onclick = () => { const c = loadChans(); c.splice(i, 1); saveChans(c); };
+    row.appendChild(del);
+
+    host.appendChild(row);
+  });
+}
+
 async function connect() {
   const path = $('portSelect').value;
   if (!path) { toast('No port selected'); return; }
@@ -146,6 +273,15 @@ function wire() {
 
   $('applyFreq').onclick = applyFreq;
   $('freqEntry').addEventListener('keydown', (e) => { if (e.key === 'Enter') applyFreq(); });
+
+  bindRepeat($('dnA'), () => nudge(0, -1));
+  bindRepeat($('upA'), () => nudge(0, +1));
+  bindRepeat($('dnB'), () => nudge(1, -1));
+  bindRepeat($('upB'), () => nudge(1, +1));
+
+  $('addChA').onclick = () => addChan(0);
+  $('addChB').onclick = () => addChan(1);
+  renderChans();
 
   for (const btn of document.querySelectorAll('button.step')) {
     btn.onclick = () => {

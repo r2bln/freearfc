@@ -27,8 +27,13 @@
 <main>
   <div class="bands">
     <div class="band card" id="bandA">
-      <div class="band-title">Band A <span class="vm btn" id="vmA" title="Toggle VFO / Memory"></span></div>
+      <div class="band-title">Band A <span class="vm btn" id="vmA" title="Click to toggle VFO / Memory"></span></div>
       <div class="freq" id="freqA">---.----- MHz</div>
+      <div class="row tunebar">
+        <button class="knob" id="dnA" title="Tune down (hold to repeat)">&#9660;</button>
+        <select class="mult" id="multA" title="Steps per click"></select>
+        <button class="knob up" id="upA" title="Tune up (hold to repeat)">&#9650;</button>
+      </div>
       <div class="row">
         <label>Mode</label>
         <select id="modeA"></select>
@@ -45,8 +50,13 @@
       </div>
     </div>
     <div class="band card" id="bandB">
-      <div class="band-title">Band B <span class="vm btn" id="vmB" title="Toggle VFO / Memory"></span></div>
+      <div class="band-title">Band B <span class="vm btn" id="vmB" title="Click to toggle VFO / Memory"></span></div>
       <div class="freq" id="freqB">---.----- MHz</div>
+      <div class="row tunebar">
+        <button class="knob" id="dnB" title="Tune down (hold to repeat)">&#9660;</button>
+        <select class="mult" id="multB" title="Steps per click"></select>
+        <button class="knob up" id="upB" title="Tune up (hold to repeat)">&#9650;</button>
+      </div>
       <div class="row">
         <label>Mode</label>
         <select id="modeB"></select>
@@ -111,6 +121,18 @@
       <label>TNC</label><input type="checkbox" id="tncOn">
       <label>Single&nbsp;band</label><input type="checkbox" id="singleBand">
     </div>
+  </div>
+
+  <div class="channels card">
+    <div class="card-title">Channels
+      <span class="tiny">PC-side list; the CAT protocol cannot read the radio&rsquo;s memory bank</span>
+    </div>
+    <div class="row">
+      <button id="addChA" title="Store Band A frequency and mode">+ from A</button>
+      <button id="addChB" title="Store Band B frequency and mode">+ from B</button>
+      <span class="tiny">&#8594;A / &#8594;B recalls a channel into that band (switches it to VFO)</span>
+    </div>
+    <div id="chanList" class="chan-list"></div>
   </div>
 
   <div class="log card">
