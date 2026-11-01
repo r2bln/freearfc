@@ -88,11 +88,13 @@ class THD75Connection extends EventEmitter {
 
   _onFrame(frame) {
     this._pushLog('rx', frame);
-    if (frame === '?') {
-      // Live-verified: the radio answers every raw/empty/wake frame with
-      // '?' and delivers queued replies batched with the NEXT request, so
-      // a '?' is never attributable to a specific pending command. Treat
-      // it as pure noise; genuine rejections surface via timeout.
+    if (frame.length === 1) {
+      // Live-verified: SET commands are answered with a single-char frame
+      // ('N', or '?' for raw/wake frames) instead of a command echo. The
+      // original client treats ANY single-char frame as a wake-up pulse
+      // for the oldest waiter, and so do we.
+      const w = this._takeOldestPending();
+      if (w) w.resolve(null);
       return;
     }
     if (frame.length < 2) return;
@@ -122,6 +124,15 @@ class THD75Connection extends EventEmitter {
       Object.assign(this.state, patch);
     }
     this.emit('state', this.state, cmd, patch);
+  }
+
+  _takeOldestPending() {
+    const [w] = this.pending.splice(0, 1);
+    if (w) {
+      clearTimeout(w.timer);
+      if (w.wakeTimer) clearTimeout(w.wakeTimer);
+    }
+    return w;
   }
 
   _takePending(cmd) {

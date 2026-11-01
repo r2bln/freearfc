@@ -83,13 +83,22 @@ test('SM response updates s-meter and busy', async () => {
   assert.strictEqual(c.state.bBand.sMeter, 7);
 });
 
-test('? does not reject the waiter (radio answers raw frames with ?)', async () => {
+test('? resolves the oldest waiter as a pulse (never an error)', async () => {
   const t = new MockTransport();
   const c = new THD75Connection(t);
   const p = c.request('MD', ' 9', { timeout: 40 });
   await sleep(10);
   t.rx('?\r');
-  await assert.rejects(p, /Timeout/); // survives '?' and still times out
+  assert.strictEqual(await p, null); // pulse, no rejection
+});
+
+test('single-char frame (N / ?) resolves the oldest waiter like the original', async () => {
+  const t = new MockTransport();
+  const c = new THD75Connection(t);
+  const p = c.request('FQ', ' 1,0446043750');
+  await sleep(10);
+  t.rx('N\r');
+  assert.strictEqual(await p, null); // accepted, no echo payload
 });
 
 test('wake byte is sent when a waiter is still pending', async () => {

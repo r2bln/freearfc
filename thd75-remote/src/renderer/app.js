@@ -4,6 +4,7 @@
 
 const $ = (id) => document.getElementById(id);
 let connected = false;
+let lastState = null;
 let applyingUi = false; // suppress change handlers while reflecting radio state
 
 function fmtMHz(freqHz) {
@@ -63,6 +64,7 @@ async function refreshPorts() {
 
 function reflect(state) {
   if (!state) return;
+  lastState = state;
   applyingUi = true;
   try {
     $('infoModel').textContent = 'Model: ' + (state.model || '?');
@@ -152,6 +154,12 @@ function wire() {
   }
 
   for (const band of ['A', 'B']) {
+    $('vm' + band).onclick = () => {
+      if (applyingUi || !connected) return;
+      const b = band === 'A' ? 0 : 1;
+      const cur = (band === 'A' ? lastState.aBand : lastState.bBand).vfoMode;
+      rpc('setVfoMode', b, cur === 0 ? 1 : 0); // toggle VFO <-> Memory
+    };
     $('mode' + band).onchange = () => {
       if (applyingUi) return;
       rpc('setMode', band === 'A' ? 0 : 1, Number($('mode' + band).value));

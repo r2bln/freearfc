@@ -116,3 +116,6 @@ main {
 }
 .hidden { display: none !important; }
 .sep { width: 12px; }
+
+.vm { font-weight: 600; color: var(--dim); cursor: pointer; padding: 0 6px; }
+.vm:hover { color: var(--accent); }

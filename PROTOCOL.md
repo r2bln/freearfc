@@ -112,12 +112,25 @@ With `AI 1`, the radio pushes the same `CMD payload` frames whenever state
 changes (FQ/MD/BY/SM/…). The client updates its mirrored state from them;
 unmatched frames are ignored.
 
+## SET-command semantics (live-verified)
+
+- SET frames are answered either by a **single-char frame** — `N` when
+  the radio refuses (e.g. FQ/UP/SF while the band is in Memory mode,
+  `VM != 0`), `?` for raw/wake frames — or, when applied, by a burst of
+  AI-style frames confirming the new state (e.g. `VM 1,1` triggers
+  `MD`/`FQ`/`SF`/`VM` updates). The original client resolves the oldest
+  waiter on ANY single-char frame; mirror that instead of waiting for a
+  command echo.
+- An applied `FQ` set snaps the frequency to the current step grid
+  (e.g. 446.043750 with a 5 kHz step becomes 446.040000).
+- VFO tuning (FQ/UP/DW/SF sets) only applies in VFO mode; switch with
+  `VM b,0|1` first.
+
 ## Error handling
 
-- `?` frame — answer to an invalid/raw frame (each of the handshake
-  probes gets one, batched and delayed). Do not map it to a specific
-  pending request; genuine command rejections are not yet observed
-  live (presumably also `?`, resolved by timeout).
+- `?` frame — answer to an invalid/raw/wake frame; never attributable to
+  a specific pending request. Resolve-and-continue like the original.
+- `N` frame — the radio refused the preceding SET (mode conflict).
 - ReadTimeout is 1000 ms at the SerialPort level; logical wait is 3000 ms.
 - Original surfaces "Cannot connect" when the port is a KISS TNC
   (radio in KISS mode), absent, or occupied.
