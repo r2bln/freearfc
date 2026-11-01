@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TH-D75 Remote</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="brand">TH&#8209;D75 <span>Remote</span></div>
+  <div class="conn">
+    <select id="portSelect" size="1"></select>
+    <button id="refreshPorts" title="Rescan ports">&#x21bb;</button>
+    <button id="connectBtn" class="primary">Connect</button>
+    <span id="connStatus" class="status">disconnected</span>
+  </div>
+</header>
+
+<section id="radioInfo" class="hidden">
+  <span id="infoModel"></span>
+  <span id="infoFw"></span>
+  <span id="infoRegion"></span>
+  <span id="infoPower"></span>
+  <span id="infoIo"></span>
+</section>
+
+<main>
+  <div class="bands">
+    <div class="band card" id="bandA">
+      <div class="band-title">Band A</div>
+      <div class="freq" id="freqA">---.----- MHz</div>
+      <div class="row">
+        <label>Mode</label>
+        <select id="modeA"></select>
+        <label>Step</label>
+        <select id="stepA"></select>
+      </div>
+      <div class="row">
+        <label>ATT</label>
+        <input type="checkbox" id="attA">
+        <label>Busy</label>
+        <span class="led" id="busyA"></span>
+        <label>S&middot;meter</label>
+        <span class="smeter"><i id="smA"></i></span>
+      </div>
+    </div>
+    <div class="band card" id="bandB">
+      <div class="band-title">Band B</div>
+      <div class="freq" id="freqB">---.----- MHz</div>
+      <div class="row">
+        <label>Mode</label>
+        <select id="modeB"></select>
+        <label>Step</label>
+        <select id="stepB"></select>
+      </div>
+      <div class="row">
+        <label>ATT</label>
+        <input type="checkbox" id="attB">
+        <label>Busy</label>
+        <span class="led" id="busyB"></span>
+        <label>S&middot;meter</label>
+        <span class="smeter"><i id="smB"></i></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="tune card">
+    <div class="card-title">VFO</div>
+    <div class="row">
+      <label>Band</label>
+      <select id="tuneBand"><option value="0">A</option><option value="1" selected>B</option></select>
+      <label>Freq&nbsp;(MHz)</label>
+      <input id="freqEntry" type="text" inputmode="decimal" placeholder="145.500000" size="11">
+      <button id="applyFreq">Set</button>
+    </div>
+    <div class="row">
+      <button class="step" data-n="0">&#8722;1</button>
+      <button class="step" data-n="1">&#8722;2</button>
+      <button class="step" data-n="2">&#8722;5</button>
+      <button class="step" data-n="3">&#8722;10</button>
+      <button class="step" data-n="4">&#8722;50</button>
+      <button class="step" data-n="5">&#8722;100</button>
+      <span class="sep"></span>
+      <button class="step up" data-n="0">+1</button>
+      <button class="step up" data-n="1">+2</button>
+      <button class="step up" data-n="2">+5</button>
+      <button class="step up" data-n="3">+10</button>
+      <button class="step up" data-n="4">+50</button>
+      <button class="step up" data-n="5">+100</button>
+      <span class="sep"></span>
+      <label>Fine</label><input type="checkbox" id="fineTune">
+      <select id="fineStep"></select>
+    </div>
+  </div>
+
+  <div class="radio card">
+    <div class="card-title">Radio</div>
+    <div class="row">
+      <label>USB out</label>
+      <select id="ioMode">
+        <option value="0">AF output</option>
+        <option value="1">IF output</option>
+        <option value="2">Detect output</option>
+      </select>
+      <label>Volume</label>
+      <button id="volDown">&#8722;</button><span id="volVal">-</span><button id="volUp">+</button>
+    </div>
+    <div class="row">
+      <label>GPS</label><input type="checkbox" id="gpsOn">
+      <label>GPS&rarr;PC</label><input type="checkbox" id="gpsPc">
+      <label>TNC</label><input type="checkbox" id="tncOn">
+      <label>Single&nbsp;band</label><input type="checkbox" id="singleBand">
+    </div>
+  </div>
+
+  <div class="log card">
+    <div class="card-title">
+      Frame log
+      <label class="tiny"><input type="checkbox" id="logEnabled" checked> show</label>
+    </div>
+    <pre id="log"></pre>
+  </div>
+</main>
+
+<div id="toast" class="hidden"></div>
+<script src="constants.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

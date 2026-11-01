@@ -1,0 +1,118 @@
+:root {
+  --bg: #14161a;
+  --card: #1d2026;
+  --edge: #2a2e36;
+  --text: #d8dce2;
+  --dim: #8b919c;
+  --accent: #e8b100;
+  --ok: #46c46e;
+  --bad: #e05252;
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: var(--card);
+  border-bottom: 1px solid var(--edge);
+}
+.brand { font-weight: 700; font-size: 18px; letter-spacing: 0.5px; }
+.brand span { color: var(--accent); }
+.conn { display: flex; gap: 8px; align-items: center; }
+
+button, select, input[type="text"] {
+  background: #262a31;
+  color: var(--text);
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font: inherit;
+  cursor: pointer;
+}
+button:hover, select:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); color: #14161a; font-weight: 600; border: none; }
+button.step { min-width: 48px; }
+#connStatus { color: var(--dim); }
+#connStatus.ok { color: var(--ok); }
+#connStatus.err { color: var(--bad); }
+
+#radioInfo {
+  display: flex; gap: 24px; padding: 8px 16px;
+  background: #17191e; color: var(--dim);
+  border-bottom: 1px solid var(--edge);
+  font-family: "Noto Sans Mono", monospace; font-size: 12px;
+}
+
+main {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 12px 16px;
+}
+.bands { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--edge);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.card-title { font-size: 12px; text-transform: uppercase; color: var(--dim); margin-bottom: 8px;
+  display: flex; justify-content: space-between; align-items: center; }
+
+.band-title { color: var(--dim); font-size: 12px; text-transform: uppercase; }
+.freq {
+  font-family: "Noto Sans Mono", monospace;
+  font-size: 34px;
+  font-weight: 600;
+  margin: 4px 0 8px;
+  letter-spacing: 1px;
+}
+.row { display: flex; align-items: center; gap: 8px; margin: 6px 0; flex-wrap: wrap; }
+.row label { color: var(--dim); font-size: 12px; }
+
+.led {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: #333; display: inline-block; border: 1px solid var(--edge);
+}
+.led.on { background: var(--bad); }
+
+.smeter {
+  display: inline-block; width: 140px; height: 12px;
+  background: #101216; border: 1px solid var(--edge); border-radius: 4px;
+  overflow: hidden;
+}
+.smeter i {
+  display: block; height: 100%; width: 0;
+  background: linear-gradient(90deg, var(--ok), var(--accent) 70%, var(--bad));
+  transition: width 120ms linear;
+}
+
+.log { grid-column: 1 / -1; }
+#log {
+  height: 160px; overflow-y: auto; margin: 0;
+  font-family: "Noto Sans Mono", monospace; font-size: 11.5px;
+  background: #101216; border-radius: 6px; padding: 8px;
+  color: #9aa1ac;
+}
+#log .tx { color: #7fb0e8; }
+#log .rx { color: #7fd0a0; }
+.tiny { font-size: 11px; text-transform: none; }
+
+#toast {
+  position: fixed; bottom: 16px; right: 16px; max-width: 420px;
+  background: var(--bad); color: white; padding: 10px 14px;
+  border-radius: 8px; font-size: 13px;
+}
+.hidden { display: none !important; }
+.sep { width: 12px; }

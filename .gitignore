@@ -1,0 +1,19 @@
+# JVCKENWOOD originals & decompilation output stay local (license terms)
+ARFC-D75_V100/
+extracted/
+decomp/
+
+# Heavy local toolchain (see README how to rebuild)
+tools/
+*.zip
+*.tar.xz
+*.nupkg
+
+# Node
+node_modules/
+dist/
+out/
+
+# Local artifacts
+*.log
+.DS_Store
