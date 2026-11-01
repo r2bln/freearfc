@@ -89,7 +89,7 @@ not the human value.
 | `FQ` | `FQ b,ffffffffff` | `FQ b` | `b,ffffffffff` | Frequency, **D10 in HERTZ** (live: `0144800000` = 144.800 MHz) |
 | `UP` | `UP nnn` | — | — | Frequency +N steps, nnn = index into [1,2,5,10,50,100] = `000..005` |
 | `DW` | `DW nnn` | — | — | Frequency −N steps, same encoding |
-| `MD` | `MD b,m` | `MD b` | `b,m` | Mode, m = 0 FM, 1 NFM, 2 WFM, 3 AM, 4 LSB, 5 USB, 6 CW, 9 DV |
+| `MD` | `MD b,m` | `MD b` | `b,m` | Mode, wire `m` = **0 FM, 1 DV, 2 AM, 3 LSB, 4 USB, 5 CW, 6 NFM, 8 WFM, 9 CW-R** (live + hamlib thd74 table; an earlier table from the OEM's UI strings was wrong and made 'AM' select LSB). JP fw 1.03 accepts CAT sets for **FM/DV/NFM only** — AM/LSB/USB/CW/WFM sets are refused regardless of segment |
 | `VM` | `VM b,v` | `VM b` | `b,v` | VFO mode v = 0 VFO, 1 Memory, 2 Call, 3 Weather |
 | `SF` | `SF b,X` | `SF b` | `b,s` | Step: set `X` = step **INDEX in uppercase hex** (live: `SF 1,1` → 6.25 kHz, `SF 1,B` → 100 kHz); response `s` = decimal index `0..11`. Values: 5000,6250,8330,9000,10000,12500,15000,20000,25000,30000,50000,100000 |
 | `FS` | `FS i` | `FS` | `i` | Fine step idx: 0→20 Hz, 1→100, 2→500, 3→1000 |

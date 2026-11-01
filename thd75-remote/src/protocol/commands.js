@@ -12,9 +12,11 @@
 
 const BAND = Object.freeze({ A: 0, B: 1 });
 
-/** RX/TX mode, wire value = index. Names from english.lng [General]. */
+/** RX/TX mode, wire value = index. Live-verified against hamlib's thd74
+ *  table and the radio: 0 FM, 1 DV, 2 AM, 3 LSB, 4 USB, 5 CW, 6 NFM,
+ *  8 WFM, 9 CW-R. JP firmware 1.03 accepts CAT sets for FM/DV/NFM only. */
 const MODE = Object.freeze([
-  'FM', 'NFM', 'WFM', 'AM', 'LSB', 'USB', 'CW', '', '', 'DV',
+  'FM', 'DV', 'AM', 'LSB', 'USB', 'CW', 'NFM', '', 'WFM', 'CW-R',
 ]);
 
 /** Coarse step in Hz, wire value for SF (set: decimal value as HEX). */
