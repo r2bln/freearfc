@@ -3,6 +3,7 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const { SerialPort } = require('serialport');
 const { THD75Connection } = require('./protocol/connection');
+const audio = require('./main/audio');
 
 let win = null;
 let port = null;
@@ -121,6 +122,11 @@ ipcMain.handle('thd75:rpc', (_e, { method, args }) => {
   return conn[method](...(args || []));
 });
 ipcMain.handle('thd75:state', () => (conn ? conn.state : null));
+
+// Radio USB-audio monitoring (loopback to the default sink).
+ipcMain.handle('audio:status', () => audio.getStatus());
+ipcMain.handle('audio:start', () => audio.start());
+ipcMain.handle('audio:stop', () => audio.stop());
 
 app.whenReady().then(createWindow);
 app.on('window-all-closed', () => { stopPolling(); app.quit(); });

@@ -265,6 +265,22 @@ function setStatus(cls, text) {
   el.textContent = text;
 }
 
+// ---------------------------------------------------------------- audio
+
+async function refreshAudio() {
+  const btn = $('audioToggle');
+  const info = $('audioInfo');
+  try {
+    const st = await window.thd75.audioStatus();
+    btn.textContent = st.active ? 'On' : 'Off';
+    btn.classList.toggle('primary', st.active);
+    info.textContent = st.error || st.source || '';
+    info.title = st.source || '';
+  } catch (err) {
+    info.textContent = err.message;
+  }
+}
+
 // ---------------------------------------------------------------- wiring
 
 function wire() {
@@ -282,6 +298,21 @@ function wire() {
   $('addChA').onclick = () => addChan(0);
   $('addChB').onclick = () => addChan(1);
   renderChans();
+
+  refreshAudio();
+  $('audioToggle').onclick = async () => {
+    const btn = $('audioToggle');
+    btn.disabled = true;
+    try {
+      const st = await window.thd75.audioStatus();
+      if (st.active) await window.thd75.audioStop();
+      else await window.thd75.audioStart();
+    } catch (err) {
+      toast('Audio: ' + err.message);
+    }
+    btn.disabled = false;
+    refreshAudio();
+  };
 
   for (const btn of document.querySelectorAll('button.step')) {
     btn.onclick = () => {
